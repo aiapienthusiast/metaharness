@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
-import { destroyConfirmed, provisionGpu, recoverStaleRuns, VLLM_IMAGE_LIST_DIGEST } from '../gpu.mjs';
+import { destroyConfirmed, provisionGpu, recoverStaleRuns, validateGpuConfig, VLLM_IMAGE_LIST_DIGEST } from '../gpu.mjs';
 import { makeVastCli } from '../gpu-vast-cli.mjs';
 import { SpendRefused } from '../gpu-spend.mjs';
 import { assertCleanVastCalls, assertNoSecrets, DUMMY_KEY, makeShims, SENTINEL_IAK, SENTINEL_JUP } from './gpu-fakes/shims.mjs';
@@ -303,4 +303,40 @@ test('signal traps are installed during provisioning and removed by teardown', a
   assert.equal(process.listenerCount('SIGTERM'), before + 1);
   await gpu.teardown();
   assert.equal(process.listenerCount('SIGTERM'), before);
+});
+
+// ── serve:false (shell-only rental for a training job run over ssh) ─────────
+test('serve:false rents a shell, waits for ssh auth, opens no tunnel and settles on teardown', async (t) => {
+  const h = harness(t);
+  let probes = 0;
+  const sshProbe = async (a) => { probes += 1; assert.equal(a.command, 'true'); return probes < 3 ? { code: 255, stderr: 'Permission denied (publickey).' } : { code: 0, stderr: '' }; };
+  const g = await provisionGpu({ ...h.opts, sshProbe, config: { ...h.opts.config, serve: false, onstartCmd: 'sleep infinity' } });
+  assert.equal(g.baseUrl, null);
+  assert.deepEqual([g.ssh.host, g.ssh.port], ['203.0.113.5', 40022]);
+  assert.equal(probes, 3, 'ssh is retried until key auth works');
+  assert.ok(h.events.some(e => e.phase === 'gpu.ssh_retry'));
+  assert.ok(h.events.some(e => e.phase === 'gpu.ready' && e.serve === false));
+  assert.equal(h.shims.sshCalls?.().length ?? 0, 0, 'no tunnel is opened');
+  const create = h.shims.vastCalls('create')[0].argv;
+  assert.equal(create[create.indexOf('--onstart-cmd') + 1], 'sleep infinity');
+  const r = await g.teardown();
+  assert.equal(r.confirmed, true);
+  assert.equal(h.ledger().at(-1).type, 'settled', 'the rental is closed and settled');
+  assert.equal(h.launches.at(-1).stopped, true, 'the watchdog is stopped after a confirmed destroy');
+  h.leakCheck();
+});
+
+test('serve:false that never authenticates fails, destroys the instance and leaves one terminal ledger row', async (t) => {
+  const h = harness(t);
+  await assert.rejects(provisionGpu({ ...h.opts, sshProbe: async () => ({ code: 255, stderr: 'Permission denied' }),
+    config: { ...h.opts.config, serve: false, onstartCmd: 'sleep infinity', sshReadyTimeoutMin: 1, pollSec: 20 } }), /ssh did not authenticate/);
+  assert.ok(h.events.some(e => e.phase === 'gpu.destroyed'));
+  assert.equal(h.ledger().filter(r => r.type === 'settled').length, 1);
+  assert.equal(h.ledger().filter(r => r.type === 'planned').length, 1);
+});
+
+test('serve config validation', () => {
+  assert.throws(() => validateGpuConfig({ serve: 'no' }, 'sv1'), /serve must be a boolean/);
+  assert.throws(() => validateGpuConfig({ sshReadyTimeoutMin: 0 }, 'sv2'), /sshReadyTimeoutMin/);
+  assert.equal(validateGpuConfig({}, 'sv3').serve, true, 'default is a model server');
 });

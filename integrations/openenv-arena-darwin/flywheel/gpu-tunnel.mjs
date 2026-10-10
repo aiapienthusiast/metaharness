@@ -2,7 +2,7 @@
 // Direct SSH (public_ipaddr + ports['22/tcp'].HostPort) as root, key-only, no ssh config files, no agent,
 // a per-run known_hosts file (Vast host keys are new every rental: trust on first use, then pinned).
 // vLLM listens on the instance's port 8000, which is never published: the tunnel is the only way in.
-import { spawn } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import net from 'node:net';
 import { resolveBin } from './gpu-vast-cli.mjs';
 
@@ -44,6 +44,26 @@ export async function openTunnel({ host, port, keyPath, knownHostsFile, localPor
   const close = () => { if (!exited) { try { proc.kill('SIGTERM'); } catch { /* gone */ } } };
   if (exited) { close(); throw new Error(`tunnel: ssh exited early: ${stderr.trim().split('\n').pop()?.slice(0, 200) ?? ''}`); }
   return { localPort: lp, alive: () => !exited, close };
+}
+
+/** Common ssh options for a one-shot command on the instance (key only, no config, per-run known_hosts). */
+export function sshCommandArgs({ host, port, keyPath, knownHostsFile, command }) {
+  if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) throw new Error('ssh: host must be an IPv4 address');
+  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('ssh: port out of range');
+  return ['-F', 'none', '-T', '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes', '-o', 'IdentityAgent=none', '-i', keyPath,
+    '-o', 'ConnectTimeout=15', '-o', 'StrictHostKeyChecking=accept-new', '-o', `UserKnownHostsFile=${knownHostsFile}`,
+    '-p', String(port), `root@${host}`, command];
+}
+
+/** Run one command over ssh. Never throws; -> {code, stdout, stderr} (code -1 when ssh could not start or timed out). */
+export function runSsh({ host, port, keyPath, knownHostsFile, command, pathEnv = process.env.PATH, home = process.env.HOME,
+  timeoutMs = 60_000 }) {
+  return new Promise((resolve) => {
+    let args;
+    try { args = sshCommandArgs({ host, port, keyPath, knownHostsFile, command }); } catch (e) { resolve({ code: -1, stdout: '', stderr: e.message }); return; }
+    execFile(resolveBin('ssh', pathEnv), args, { env: { PATH: pathEnv, HOME: home }, timeout: timeoutMs, maxBuffer: 4_000_000 },
+      (err, stdout, stderr) => resolve({ code: err ? (typeof err.code === 'number' ? err.code : -1) : 0, stdout: String(stdout ?? ''), stderr: String(stderr ?? '').slice(-2000) }));
+  });
 }
 
 /** One probe: true when GET {baseUrl}/models lists `model`. Never throws. */

@@ -13,7 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { makeVastCli, parseSshEndpoint, redact, fetchVastKey } from './gpu-vast-cli.mjs';
 import { appendRow, checkSpend, loadLedger, precheckCaps, rentalsJournaled, SpendRefused } from './gpu-spend.mjs';
-import { openTunnel, probeModels } from './gpu-tunnel.mjs';
+import { openTunnel, probeModels, runSsh } from './gpu-tunnel.mjs';
 import { actualCost, destroyConfirmed, launchWatchdog, staleOpenRuns, sweepStaleRuns } from './gpu-backstop.mjs';
 
 export { fetchVastKey } from './gpu-vast-cli.mjs';
@@ -36,6 +36,8 @@ export const GPU_DEFAULTS = Object.freeze({
   servedModelName: 'qwen38',
   onstartCmd: 'vllm serve Qwen/Qwen3.8-27B --host 0.0.0.0 --port 8000 --max-model-len 32768 --max-num-seqs 128 --gpu-memory-utilization 0.92 --served-model-name qwen38 --reasoning-parser qwen3',
   sshKeyPath: '~/.ssh/id_ed25519', localPort: 0,
+  serve: true, // false: rent a GPU shell only (no model server, no tunnel); the caller runs its own job over ssh
+  sshReadyTimeoutMin: 15, // serve:false: how long ssh key auth may take (it can lag the running state)
   bootTimeoutMin: 20, modelTimeoutMin: 50, pollSec: 15, tunnelSettleSec: 3,
   attachAttempts: 5, destroyAttempts: 6, destroyBackoffSec: 10,
   ambiguousRecheckSec: 240, ambiguousPollSec: 30, // a create that may have succeeded: look for its label this long
@@ -60,6 +62,8 @@ export function validateGpuConfig(cfg, runId) {
   if (typeof c.onstartCmd !== 'string' || !c.onstartCmd.trim() || /[\r\n]/.test(c.onstartCmd)) throw new Error('gpu config: onstartCmd invalid');
   if (!/^[A-Za-z0-9._-]{1,64}$/.test(c.servedModelName)) throw new Error('gpu config: servedModelName invalid');
   if (!['systemd-run', 'detached'].includes(c.watchdogLauncher)) throw new Error('gpu config: watchdogLauncher invalid');
+  if (typeof c.serve !== 'boolean') throw new Error('gpu config: serve must be a boolean');
+  if (!posNum(c.sshReadyTimeoutMin)) throw new SpendRefused('config sshReadyTimeoutMin must be a finite number > 0');
   for (const k of ['excludeOffers', 'excludeMachines']) {
     if (c[k] !== undefined && !(Array.isArray(c[k]) && c[k].every(posInt))) throw new Error(`gpu config: ${k} must be an array of positive integers`);
   }
@@ -84,7 +88,7 @@ export function selectOffer(offers, c) {
  *   deadlineEpoch:number, plannedUsd:number, teardown:() => Promise<{confirmed:boolean}>}>}
  */
 export async function provisionGpu({ runId, config = {}, stateDir, journal = () => {}, now = Date.now, sleep = sleepReal,
-  pathEnv = process.env.PATH, getKey, vastUrl, launch = launchWatchdog, installTraps = true, fetchImpl } = {}) {
+  pathEnv = process.env.PATH, getKey, vastUrl, launch = launchWatchdog, installTraps = true, fetchImpl, sshProbe = runSsh } = {}) {
   const c = validateGpuConfig(config, runId);
   const keyPath = String(c.sshKeyPath).replace(/^~(?=\/)/, os.homedir());
   let pub = '';
@@ -197,6 +201,20 @@ export async function provisionGpu({ runId, config = {}, stateDir, journal = () 
     }
     ev('running', { instanceId, sshHost: endpoint.host, sshPort: endpoint.port });
     const knownHostsFile = path.join(stateDir, `known_hosts-${runId}`);
+    if (!c.serve) { // shell-only rental: wait until key auth works (re-attaching the key now and then), then hand back ssh details
+      const sshUntil = now() + c.sshReadyTimeoutMin * 60_000;
+      for (let tries = 1; ; tries += 1) {
+        if (now() > sshUntil) throw new Error('gpu: ssh did not authenticate before sshReadyTimeoutMin');
+        const r = await sshProbe({ ...endpoint, keyPath, knownHostsFile, command: 'true', pathEnv });
+        if (r.code === 0) break;
+        ev('ssh_retry', { tries, code: r.code, error: redact(String(r.stderr ?? '').split('\n').filter(Boolean).pop() ?? '') });
+        if (tries % 4 === 0) await cli.attachSsh(instanceId, `${keyPath}.pub`).catch(() => {});
+        await sleep(c.pollSec * 1000);
+      }
+      ev('ready', { instanceId, ssh: true, serve: false });
+      return { baseUrl: null, ssh: { host: endpoint.host, port: endpoint.port, keyPath, knownHostsFile }, instanceId, dphTotal: offer.dph_total,
+        label: c.label, offerId: offer.id, deadlineEpoch, plannedUsd, teardown };
+    }
     const modelUntil = now() + c.modelTimeoutMin * 60_000;
     for (;;) {
       if (now() > modelUntil) throw new Error('gpu: /v1/models did not list the served model before modelTimeoutMin');
