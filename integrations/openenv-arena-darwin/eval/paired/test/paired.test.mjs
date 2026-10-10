@@ -5,7 +5,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { EventEmitter } from 'node:events';
 import { analyze, learnabilityReport, render, renderLearnability } from '../paired-analyze.mjs';
-import { buildJobs, calibrateArgs, outFile, runBench, validateConfig } from '../paired-bench.mjs';
+import { buildJobs, calibrateArgs, isFinished, outFile, runBench, validateConfig } from '../paired-bench.mjs';
 import { benchWallSeconds, gpuConfig, runOnVast } from '../paired-vast.mjs';
 import { badReplyCount, cellTable, compareArms, flagged, isConformingAction, learnability, loadArm, loadGroups, pairedBootstrap, parseCellFile, rng } from '../lib.mjs';
 import { arenaToDarwin, parseAction, scanDirs, scanTrajectory } from '../trajectory-scan.mjs';
@@ -281,4 +281,27 @@ test('family splits keep train and held-out families disjoint', () => {
   assert.throws(() => splitFamilies(fams, ['z']), /unknown/);
   assert.throws(() => splitFamilies(fams, fams), /at least one/);
   assert.throws(() => splitFamilies(fams, []), /at least one/);
+});
+
+test('resume re-runs files left by a failed attempt and skips only genuinely finished ones', async () => {
+  const dir = tmp(), cfg = { ...baseCfg(dir), blocks: 1, families: ['a'], difficulties: [1], arms: { V0: dir }, workers: 1 };
+  const c = validateConfig(cfg), job = buildJobs(c)[0], file = outFile(c, job);
+  mkdirSync(path.dirname(file), { recursive: true });
+  const ep = (failure) => JSON.stringify({ type: 'episode', seed: 1, reward: 0, solved: false, failure, trajectory: { messages: [], failure } });
+  assert.equal(isFinished(file), false, 'no file yet');
+  writeFileSync(file, `${ep('provider_request_failed')}\n`);
+  assert.equal(isFinished(file), false, 'a provider failure is not finished');
+  writeFileSync(file, '');
+  assert.equal(isFinished(file), false, 'an empty file is not finished');
+  writeFileSync(file, `${ep(null)}\n${ep('invalid_json_action')}\n`);
+  assert.equal(isFinished(file), true, 'an agent-side failure is a real result, not a provider failure');
+  // the stale failed file is re-run and replaced, not appended to
+  writeFileSync(file, `${ep('provider_request_failed')}\n`);
+  const log = [];
+  const s = await runBench(cfg, { spawnFn: fakeSpawn(log), log: () => {} });
+  assert.deepEqual([s.ran, s.skipped], [1, 0]);
+  assert.equal(readFileSync(file, 'utf8').trim().split('\n').length, 1, 'stale output was removed before the re-run');
+  const again = await runBench(cfg, { spawnFn: fakeSpawn(log), log: () => {} });
+  assert.deepEqual([again.ran, again.skipped], [0, 1]);
+  rmSync(dir, { recursive: true });
 });

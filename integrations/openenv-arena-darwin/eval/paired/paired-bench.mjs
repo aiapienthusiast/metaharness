@@ -11,7 +11,7 @@
 // abortAfterFailures.
 // Only loopback base URLs are accepted: the placeholder API key "EMPTY" must never be sent to a real provider.
 import { spawn } from 'node:child_process';
-import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertSeedsIn, configSeeds } from './splits.mjs';
@@ -73,6 +73,13 @@ function failureCounts(file) {
   return { n, fail };
 }
 
+/** A cell file counts as finished only if it holds episodes and none of them failed at the provider (a failed attempt is re-run). */
+export function isFinished(file) {
+  if (!existsSync(file)) return false;
+  const { n, fail } = failureCounts(file);
+  return n > 0 && fail === 0;
+}
+
 /** Run every job through a bounded worker pool. `spawnFn` is injectable for tests. -> summary */
 export async function runBench(raw, { spawnFn = spawn, now = Date.now, log } = {}) {
   const c = validateConfig(raw);
@@ -85,7 +92,8 @@ export async function runBench(raw, { spawnFn = spawn, now = Date.now, log } = {
 
   const one = async (j) => {
     const out = outFile(c, j);
-    if (existsSync(out) && statSync(out).size > 0) { skipped += 1; return; }
+    if (isFinished(out)) { skipped += 1; return; }
+    if (existsSync(out)) unlinkSync(out); // stale output of a failed attempt: calibrate must not append to it
     if (existsSync(path.join(c.outDir, 'STOP'))) return halt('stop-file');
     if ((now() - t0) / 1000 > c.maxWallS) return halt('wall-clock');
     mkdirSync(path.dirname(out), { recursive: true });
