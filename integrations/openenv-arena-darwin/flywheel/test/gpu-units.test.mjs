@@ -157,3 +157,19 @@ test('ledger file is append-only JSONL with mode 0600', () => {
     assert.equal(statSync(f).mode & 0o777, 0o600);
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
+
+test('selectOffer: excluded offers and machines are skipped; bad exclusion lists are refused', () => {
+  const c = validateGpuConfig({}, 'ex1');
+  const offers = [
+    { id: 1, machine_id: 10, dph_total: 0.9, num_gpus: 1, gpu_ram: 96000 },
+    { id: 2, machine_id: 10, dph_total: 0.95, num_gpus: 1, gpu_ram: 96000 },
+    { id: 3, machine_id: 11, dph_total: 1.2, num_gpus: 1, gpu_ram: 96000 },
+  ];
+  assert.equal(selectOffer(offers, c).id, 1);
+  assert.equal(selectOffer(offers, { ...c, excludeOffers: [1] }).id, 2);
+  assert.equal(selectOffer(offers, { ...c, excludeMachines: [10] }).id, 3, 'a machine exclusion removes all its offers');
+  assert.equal(selectOffer(offers, { ...c, excludeMachines: [10, 11] }), null);
+  assert.equal(offers.length, 3, 'the input list is not mutated');
+  assert.throws(() => validateGpuConfig({ excludeOffers: ['x'] }, 'ex2'), /excludeOffers/);
+  assert.throws(() => validateGpuConfig({ excludeMachines: 5 }, 'ex3'), /excludeMachines/);
+});

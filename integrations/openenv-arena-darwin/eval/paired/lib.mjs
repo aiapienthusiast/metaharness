@@ -21,10 +21,10 @@ export function badReplyCount(messages) {
   return bad;
 }
 
-/** `finance_ledger_d2_s900012.jsonl` -> { cell: 'finance_ledger_d2', fileSeed: 900012 } */
+/** `finance_ledger_d2_s900012.jsonl` -> { cell, fileSeed, rep: 0 }; `..._s900012_r3.jsonl` -> rep 3 (repeat samples of the same instances). */
 export function parseCellFile(name) {
-  const m = /^(.*)_s(\d+)\.jsonl$/.exec(name);
-  return m ? { cell: m[1], fileSeed: Number(m[2]) } : null;
+  const m = /^(.*)_s(\d+)(?:_r(\d+))?\.jsonl$/.exec(name);
+  return m ? { cell: m[1], fileSeed: Number(m[2]), rep: m[3] === undefined ? 0 : Number(m[3]) } : null;
 }
 
 /** Load one arm's episodes: Map key `${cell}#${seed}` -> {cell, reward, solved, bad, failure, messages}. */
@@ -40,7 +40,7 @@ export function loadArm(dir) {
       try { r = JSON.parse(line); } catch { continue; }
       if (r.type !== 'episode' || r.trajectory?.failure === 'provider_request_failed' || r.failure === 'provider_request_failed') continue;
       const messages = r.trajectory?.messages ?? [];
-      out.set(`${p.cell}#${r.seed}`, {
+      out.set(`${p.cell}#${r.seed}${p.rep ? `#r${p.rep}` : ''}`, {
         cell: p.cell, reward: Number(r.reward) || 0, solved: Boolean(r.solved), bad: badReplyCount(messages) > 0,
         failure: r.failure ?? r.trajectory?.failure ?? null, messages,
       });
@@ -123,4 +123,47 @@ export function cellTable(arm) {
     n: es.length, meanReward: mean(es.map((e) => e.reward)), solvedRate: mean(es.map((e) => (e.solved ? 1 : 0))),
     rewardPositive: mean(es.map((e) => (e.reward > 0 ? 1 : 0))), badRate: mean(es.map((e) => (e.bad ? 1 : 0))),
   }]));
+}
+
+/** Repeat samples grouped by task instance: Map cell -> Map instanceSeed -> [reward, ...]. Provider failures are dropped. */
+export function loadGroups(dir) {
+  const cells = new Map();
+  if (!existsSync(dir)) return cells;
+  for (const f of readdirSync(dir)) {
+    const p = parseCellFile(f);
+    if (!p) continue;
+    for (const line of readFileSync(path.join(dir, f), 'utf8').split('\n')) {
+      if (!line.trim()) continue;
+      let r;
+      try { r = JSON.parse(line); } catch { continue; }
+      if (r.type !== 'episode' || r.trajectory?.failure === 'provider_request_failed' || r.failure === 'provider_request_failed') continue;
+      const inst = cells.get(p.cell) ?? new Map();
+      cells.set(p.cell, inst);
+      (inst.get(r.seed) ?? inst.set(r.seed, []).get(r.seed)).push(Number(r.reward) || 0);
+    }
+  }
+  return cells;
+}
+
+const std = (xs) => { const m = mean(xs); return Math.sqrt(mean(xs.map((x) => (x - m) ** 2))); };
+
+/**
+ * Learnability of each cell: the share of task instances whose repeat samples do NOT all score the same. A group that
+ * scores identically gives GRPO no advantage signal, so `mixed` is the quantity that must be high for training to learn.
+ * Instances with fewer than `minGroup` samples are ignored.
+ */
+export function learnability(cells, { minGroup = 2 } = {}) {
+  const out = {};
+  for (const [cell, inst] of [...cells.entries()].sort()) {
+    const groups = [...inst.values()].filter((g) => g.length >= minGroup);
+    if (!groups.length) continue;
+    const mixed = groups.filter((g) => std(g) > 1e-9);
+    out[cell] = {
+      instances: groups.length, groupSize: mean(groups.map((g) => g.length)), mixed: mixed.length / groups.length,
+      allZero: groups.filter((g) => g.every((x) => x === 0)).length / groups.length,
+      allSolved: groups.filter((g) => g.every((x) => x === 1)).length / groups.length,
+      meanReward: mean(groups.flat()), meanStdWhenMixed: mixed.length ? mean(mixed.map(std)) : 0,
+    };
+  }
+  return out;
 }

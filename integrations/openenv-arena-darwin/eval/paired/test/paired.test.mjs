@@ -4,11 +4,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { EventEmitter } from 'node:events';
-import { analyze, render } from '../paired-analyze.mjs';
-import { buildJobs, calibrateArgs, runBench, validateConfig } from '../paired-bench.mjs';
+import { analyze, learnabilityReport, render, renderLearnability } from '../paired-analyze.mjs';
+import { buildJobs, calibrateArgs, outFile, runBench, validateConfig } from '../paired-bench.mjs';
 import { benchWallSeconds, gpuConfig, runOnVast } from '../paired-vast.mjs';
-import { badReplyCount, cellTable, compareArms, flagged, isConformingAction, loadArm, pairedBootstrap, parseCellFile, rng } from '../lib.mjs';
+import { badReplyCount, cellTable, compareArms, flagged, isConformingAction, learnability, loadArm, loadGroups, pairedBootstrap, parseCellFile, rng } from '../lib.mjs';
 import { arenaToDarwin, parseAction, scanDirs, scanTrajectory } from '../trajectory-scan.mjs';
+import { SPLITS, assertSeedsIn, configSeeds, seedSplit, splitFamilies } from '../splits.mjs';
 
 const tmp = () => mkdtempSync(path.join(os.tmpdir(), 'paired-'));
 const act = (o) => JSON.stringify(o);
@@ -35,8 +36,10 @@ test('strict action parsing', () => {
 });
 
 test('cell file names', () => {
-  assert.deepEqual(parseCellFile('finance_ledger_d2_s900012.jsonl'), { cell: 'finance_ledger_d2', fileSeed: 900012 });
+  assert.deepEqual(parseCellFile('finance_ledger_d2_s900012.jsonl'), { cell: 'finance_ledger_d2', fileSeed: 900012, rep: 0 });
   assert.equal(parseCellFile('notes.txt'), null);
+  assert.deepEqual(parseCellFile('math_route_d1_s900004_r3.jsonl'), { cell: 'math_route_d1', fileSeed: 900004, rep: 3 });
+  assert.equal(parseCellFile('math_route_d1_s900004.jsonl').rep, 0);
 });
 
 test('bootstrap is deterministic, signed and honest about no effect', () => {
@@ -206,4 +209,76 @@ test('golden: reproduces the reply-format result on the archived benchmark', { s
   assert.ok(Math.abs(p.solved.mean - 0.022) < 0.002);
   for (const k of ['V2-V1', 'V3-V1']) assert.ok(res.comparisons[k].pooled.reward.lo < 0 && res.comparisons[k].pooled.reward.hi > 0, `${k} must show no reward effect`);
   assert.ok(res.summary.arms.V0.badRate > 0.7 && res.summary.arms.V1.badRate < 0.01);
+});
+
+// ── learnability (repeat samples of the same instances) ────────────────────
+test('repeats multiply jobs, reuse the same seed and name the files by repeat', () => {
+  const dir = tmp(), c = validateConfig({ ...baseCfg(dir), repeats: 3 }), jobs = buildJobs(c);
+  assert.equal(jobs.length, 3 * 2 * 2 * 2 * 3);
+  const seeds = new Set(jobs.filter((j) => j.fam === 'a' && j.d === 1 && j.arm === 'V0' && j.seed === c.seedBase).map((j) => j.rep));
+  assert.deepEqual([...seeds].sort(), [0, 1, 2], 'every repeat re-samples the same seed');
+  assert.match(path.basename(outFile(c, jobs[1])), /_r1\.jsonl$/);
+  assert.doesNotMatch(path.basename(outFile(c, jobs[0])), /_r\d/, 'repeat 0 keeps the legacy name');
+  assert.equal(validateConfig(baseCfg(dir)).repeats, 1);
+  rmSync(dir, { recursive: true });
+});
+
+test('learnability: identical samples teach nothing, spread samples do', () => {
+  const dir = tmp(); mkdirSync(path.join(dir, 'V1'), { recursive: true });
+  const ep = (seed, reward) => JSON.stringify({ type: 'episode', seed, reward, solved: reward === 1, trajectory: { messages: [] } });
+  const file = (name, rows) => writeFileSync(path.join(dir, 'V1', name), `${rows.join('\n')}\n`);
+  // cell "flat": instance 1 always 0, instance 2 always 1 -> nothing to learn from
+  file('flat_d1_s100.jsonl', [ep(100, 0), ep(101, 1)]);
+  file('flat_d1_s100_r1.jsonl', [ep(100, 0), ep(101, 1)]);
+  // cell "mixed": instance 1 varies, instance 2 always 0
+  file('mixed_d1_s100.jsonl', [ep(100, 0), ep(101, 0)]);
+  file('mixed_d1_s100_r1.jsonl', [ep(100, 1), ep(101, 0)]);
+  file('mixed_d1_s100_r2.jsonl', [ep(100, 0.5), ep(101, 0)]);
+  const t = learnability(loadGroups(path.join(dir, 'V1')));
+  assert.equal(t.flat_d1.mixed, 0);
+  assert.deepEqual([t.flat_d1.allZero, t.flat_d1.allSolved], [0.5, 0.5]);
+  assert.equal(t.mixed_d1.mixed, 0.5);
+  assert.equal(t.mixed_d1.allZero, 0.5);
+  assert.ok(t.mixed_d1.meanStdWhenMixed > 0.3);
+  assert.equal(t.mixed_d1.groupSize, 3);
+  assert.match(renderLearnability(learnabilityReport(dir, 'V1')), /mixed_d1 +2 +3\.0 +50\.0%/);
+  // a single sample per instance carries no group information and must be ignored
+  file('solo_d1_s100.jsonl', [ep(100, 1)]);
+  assert.equal(learnability(loadGroups(path.join(dir, 'V1'))).solo_d1, undefined);
+  // pairing logic still treats repeats as separate episodes
+  assert.equal(loadArm(path.join(dir, 'V1')).has('mixed_d1#100#r2'), true);
+  rmSync(dir, { recursive: true });
+});
+
+// ── splits ──────────────────────────────────────────────────────────────────
+test('seed ranges are disjoint and classify correctly', () => {
+  const names = Object.keys(SPLITS);
+  for (const a of names) for (const b of names) if (a < b) {
+    const [alo, ahi] = SPLITS[a], [blo, bhi] = SPLITS[b];
+    assert.ok(ahi <= blo || bhi <= alo, `${a} and ${b} overlap`);
+  }
+  assert.deepEqual([seedSplit(900000), seedSplit(909999), seedSplit(910000), seedSplit(2000000), seedSplit(5), seedSplit(1.5)], ['heldout', 'heldout', 'select', 'train', null, null]);
+  assert.throws(() => assertSeedsIn('heldout', [900001, 910001]), /not in the heldout range/);
+  assert.doesNotThrow(() => assertSeedsIn('select', [910000, 919999]));
+  assert.throws(() => assertSeedsIn('nope', [1]), /unknown split/);
+});
+
+test('a declared split makes the benchmark refuse out-of-range instances', () => {
+  const dir = tmp(), c = baseCfg(dir);
+  assert.equal(configSeeds({ blocks: 2, seedStep: 4, seedBase: 910000 }).length, 8);
+  assert.doesNotThrow(() => validateConfig({ ...c, split: 'select', seedBase: 910000 }));
+  assert.throws(() => validateConfig({ ...c, split: 'heldout', seedBase: 910000 }), /not in the heldout range/);
+  assert.throws(() => validateConfig({ ...c, split: 'train', seedBase: 900000 }), /not in the train range/);
+  // the range edge is checked on the LAST seed of the LAST block, not only the base
+  assert.throws(() => validateConfig({ ...c, split: 'heldout', seedBase: 909990, blocks: 5 }), /not in the heldout range/);
+  assert.doesNotThrow(() => validateConfig(c), 'no split declared: legacy behavior');
+  rmSync(dir, { recursive: true });
+});
+
+test('family splits keep train and held-out families disjoint', () => {
+  const fams = ['a', 'b', 'c', 'd'];
+  assert.deepEqual(splitFamilies(fams, ['c', 'd']), { train: ['a', 'b'], heldout: ['c', 'd'] });
+  assert.throws(() => splitFamilies(fams, ['z']), /unknown/);
+  assert.throws(() => splitFamilies(fams, fams), /at least one/);
+  assert.throws(() => splitFamilies(fams, []), /at least one/);
 });

@@ -7,15 +7,17 @@
 //   node eval/paired/paired-bench.mjs CONFIG.json          (uses VLLM_BASE_URL unless the config sets baseUrl)
 //
 // Config keys: outDir, python, calibrate, arms {name: envDir}, families[], difficulties[], blocks, seedBase, seedStep,
-// baseUrl, model, workers, maxWallS, maxSteps, maxTokens, maxTotalTokens, thinking, abortAfterFailures.
+// split (heldout | select | train: refuses seeds outside that range, see splits.mjs), repeats (re-sample the same instances), baseUrl, model, workers, maxWallS, maxSteps, maxTokens, maxTotalTokens, thinking,
+// abortAfterFailures.
 // Only loopback base URLs are accepted: the placeholder API key "EMPTY" must never be sent to a real provider.
 import { spawn } from 'node:child_process';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertSeedsIn, configSeeds } from './splits.mjs';
 
 export const DEFAULTS = Object.freeze({
-  difficulties: [1, 2, 3], blocks: 12, seedBase: 900000, seedStep: 4, model: 'qwen38', workers: 48, maxWallS: 9000,
+  difficulties: [1, 2, 3], blocks: 12, repeats: 1, seedBase: 900000, seedStep: 4, model: 'qwen38', workers: 48, maxWallS: 9000,
   maxSteps: 8, maxTokens: 2048, maxTotalTokens: 100000, thinking: 'off', abortAfterFailures: 10,
 });
 const LOOPBACK = /^http:\/\/(127\.0\.0\.1|localhost):\d{1,5}(\/|$)/;
@@ -28,10 +30,12 @@ export function validateConfig(raw, env = process.env) {
   for (const [n, d] of Object.entries(c.arms)) if (!/^[A-Za-z0-9_-]{1,16}$/.test(n) || !existsSync(d)) throw new Error(`config: arm ${n} invalid or missing directory`);
   if (!Array.isArray(c.families) || !c.families.length) throw new Error('config: families must be a non-empty array');
   if (typeof c.baseUrl !== 'string' || !LOOPBACK.test(c.baseUrl)) throw new Error('config: baseUrl must be a loopback http URL (the local vLLM tunnel)');
-  for (const k of ['blocks', 'seedBase', 'seedStep', 'workers', 'maxWallS', 'maxSteps', 'maxTokens', 'maxTotalTokens', 'abortAfterFailures']) {
+  for (const k of ['blocks', 'repeats', 'seedBase', 'seedStep', 'workers', 'maxWallS', 'maxSteps', 'maxTokens', 'maxTotalTokens', 'abortAfterFailures']) {
     if (!Number.isFinite(c[k]) || c[k] <= 0) throw new Error(`config: ${k} must be a positive number`);
   }
   if (!['on', 'off'].includes(c.thinking)) throw new Error('config: thinking must be on or off');
+  // Optional guard: declare the role of this run (heldout | select | train) and every instance seed must lie in that range.
+  if (c.split !== undefined) assertSeedsIn(c.split, configSeeds(c));
   return c;
 }
 
@@ -40,13 +44,14 @@ export function buildJobs(c) {
   const jobs = [];
   for (let b = 0; b < c.blocks; b += 1) {
     for (const fam of c.families) for (const d of c.difficulties) for (const arm of Object.keys(c.arms)) {
-      jobs.push({ arm, fam, d, seed: c.seedBase + c.seedStep * b });
+      // repeats > 1 re-samples the SAME instances (same seed) in separate files, so within-instance outcome spread can be measured.
+      for (let rep = 0; rep < c.repeats; rep += 1) jobs.push({ arm, fam, d, seed: c.seedBase + c.seedStep * b, rep });
     }
   }
   return jobs;
 }
 
-export const outFile = (c, j) => path.join(c.outDir, j.arm, `${j.fam}_d${j.d}_s${j.seed}.jsonl`);
+export const outFile = (c, j) => path.join(c.outDir, j.arm, `${j.fam}_d${j.d}_s${j.seed}${j.rep ? `_r${j.rep}` : ''}.jsonl`);
 
 export function calibrateArgs(c, j, out) {
   return [c.calibrate, '--base-url', c.baseUrl, '--model', c.model, '--model-revision', 'unknown', '--task-id', j.fam,

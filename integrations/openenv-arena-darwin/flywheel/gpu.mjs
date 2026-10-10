@@ -60,6 +60,9 @@ export function validateGpuConfig(cfg, runId) {
   if (typeof c.onstartCmd !== 'string' || !c.onstartCmd.trim() || /[\r\n]/.test(c.onstartCmd)) throw new Error('gpu config: onstartCmd invalid');
   if (!/^[A-Za-z0-9._-]{1,64}$/.test(c.servedModelName)) throw new Error('gpu config: servedModelName invalid');
   if (!['systemd-run', 'detached'].includes(c.watchdogLauncher)) throw new Error('gpu config: watchdogLauncher invalid');
+  for (const k of ['excludeOffers', 'excludeMachines']) {
+    if (c[k] !== undefined && !(Array.isArray(c[k]) && c[k].every(posInt))) throw new Error(`gpu config: ${k} must be an array of positive integers`);
+  }
   if (!(c.localPort === 0 || (Number.isInteger(c.localPort) && c.localPort >= 1024 && c.localPort <= 65535))) throw new Error('gpu config: localPort invalid');
   return { ...c, label: `arena-flywheel-${runId}` };
 }
@@ -68,6 +71,9 @@ export function validateGpuConfig(cfg, runId) {
 export function selectOffer(offers, c) {
   const ok = offers.filter(o => o && posInt(o.id) && posNum(o.dph_total) && o.dph_total <= c.maxDphUsd &&
     o.num_gpus === 1 && posNum(o.gpu_ram) && o.gpu_ram >= c.minGpuRamMb);
+  // Hosts or offers that already failed us (for example a slow image pull) can be excluded for a retry.
+  const exO = new Set(c.excludeOffers ?? []), exM = new Set(c.excludeMachines ?? []);
+  for (let i = ok.length - 1; i >= 0; i -= 1) if (exO.has(ok[i].id) || (ok[i].machine_id != null && exM.has(ok[i].machine_id))) ok.splice(i, 1);
   ok.sort((a, b) => a.dph_total - b.dph_total || a.id - b.id);
   return ok[0] ?? null;
 }
