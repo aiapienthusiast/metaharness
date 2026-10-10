@@ -163,6 +163,9 @@ test('happy path: pinned image, watchdog first, tunnel + /v1/models, then a conf
   assert.equal(create[create.indexOf('--image') + 1], `vllm/vllm-openai@${VLLM_IMAGE_LIST_DIGEST}`);
   assert.equal(create[create.indexOf('--label') + 1], 'arena-flywheel-t1');
   assert.match(create[create.indexOf('--onstart-cmd') + 1], /^vllm serve Qwen\/Qwen3\.8-27B .*--served-model-name qwen38 --reasoning-parser qwen3$/);
+  // Qwen3.8-27B has hybrid (Mamba-style) layers: vLLM's default max_num_seqs (1024) exceeds the available cache blocks and the
+  // engine aborts at startup ("max_num_seqs (1024) exceeds available Mamba cache blocks (674)"), so the launch must cap it.
+  assert.match(create[create.indexOf('--onstart-cmd') + 1], /--max-num-seqs 128\b/);
   for (const f of ['--ssh', '--direct', '--cancel-unavail']) assert.ok(create.includes(f), f);
   assert.equal(create[create.indexOf('--disk') + 1], '150');
   const search = h.shims.vastCalls('search')[0].argv;

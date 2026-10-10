@@ -34,7 +34,7 @@ export const GPU_DEFAULTS = Object.freeze({
   dailyCapUsd: 12, totalCapUsd: 200,
   image: `vllm/vllm-openai@${VLLM_IMAGE_LIST_DIGEST}`,
   servedModelName: 'qwen38',
-  onstartCmd: 'vllm serve Qwen/Qwen3.8-27B --host 0.0.0.0 --port 8000 --max-model-len 32768 --gpu-memory-utilization 0.92 --served-model-name qwen38 --reasoning-parser qwen3',
+  onstartCmd: 'vllm serve Qwen/Qwen3.8-27B --host 0.0.0.0 --port 8000 --max-model-len 32768 --max-num-seqs 128 --gpu-memory-utilization 0.92 --served-model-name qwen38 --reasoning-parser qwen3',
   sshKeyPath: '~/.ssh/id_ed25519', localPort: 0,
   bootTimeoutMin: 20, modelTimeoutMin: 50, pollSec: 15, tunnelSettleSec: 3,
   attachAttempts: 5, destroyAttempts: 6, destroyBackoffSec: 10,
