@@ -26,7 +26,7 @@ export const DEFAULT_SETUP = [
 
 /** GPU config for a training rental: a shell only (no model server), one 80 GB+ card, the owner's caps. */
 export function gpuConfig(cfg = {}) {
-  return { serve: false, onstartCmd: 'sleep infinity', maxDphUsd: 3.0, maxGpuHours: 3, graceHours: 0.25, dailyCapUsd: 25, totalCapUsd: 250,
+  return { serve: false, onstartCmd: 'sleep infinity', maxDphUsd: 3.0, maxGpuHours: 3, graceHours: 0.25, dailyCapUsd: 25, totalCapUsd: 230,
     minGpuRamMb: 78000, diskGb: 200, ...cfg };
 }
 

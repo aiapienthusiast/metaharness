@@ -14,7 +14,7 @@ function job(dir, extra = {}) {
 
 test('gpu config is a shell-only rental with the owner caps', () => {
   const g = gpuConfig();
-  assert.deepEqual([g.serve, g.onstartCmd, g.totalCapUsd <= 250, g.minGpuRamMb >= 78000], [false, 'sleep infinity', true, true]);
+  assert.deepEqual([g.serve, g.onstartCmd, g.totalCapUsd <= 230, g.minGpuRamMb >= 78000], [false, 'sleep infinity', true, true]);
   assert.equal(gpuConfig({ maxGpuHours: 5 }).maxGpuHours, 5);
 });
 
