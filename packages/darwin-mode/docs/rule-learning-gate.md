@@ -59,3 +59,37 @@ p50 1.00 ms, p95 2.84 ms and maximum 3.21 ms. Each fixture makes 60 synthetic ho
 calls. These numbers measure validation, hashing and scheduling with trivial host
 measurements; they exclude real evaluation work and cannot establish model or
 device latency. Zero interaction counts and unsafe aggregate counts reject.
+
+## Actual local-operation comparison
+
+```
+node --experimental-strip-types --test scripts/rule-learning-local-tasks.test.mjs
+node --experimental-strip-types scripts/rule-learning-local-tasks.mjs packages/darwin-mode/docs/local-rule-task-benchmark.json
+```
+
+The checked-in report records source SHA256 hashes, base commits, observation
+counts, candidate/program hashes and aggregate results without raw hidden answers.
+The commit fields identify checkout bases; the source SHA256 fields identify the
+actual working files, including uncommitted edits. These generated, published
+holdout fixtures are hidden from the proposal API during each run, but are not a
+permanently secret benchmark and must not be used as protected production tests.
+The proposal learner receives three observed transitions per seed. Its first
+compatible candidate is locked before nine shifted held-out input combinations.
+The baseline reuses the last observed delta with exactly the same observation
+budget. Five seeds cover temporary-file append/stat, SQLite insert/count and zlib
+compressed-length prediction. File and SQL operations are distinct implementations
+of the same additive mechanism; these are operational microbenchmarks, not three
+independent reasoning domains or production agent tasks.
+
+Measured: learned candidates score 45/45 versus baseline 5/45 on each additive
+family, an 88.9-point gain over the weak last-delta comparator. A stronger,
+hand-authored action-aware addition baseline also scores 45/45 on both additive
+families. The learner has **zero gain over this practical domain baseline**; the
+88.9-point figure is not evidence of novel skill improvement. All three methods
+score 0/45 on compression. Interaction savings are
+0%. The real gate rejects promotion: replay/probe failures and insufficient savings.
+Its trusted runner reruns actual operations twice for each method/family/seed and
+checks an additional host-owned probe. The baseline's inability to replay all
+training examples also rejects under the strict shared policy. This is a useful
+failure, not an acceptance claim. The finite DSL cannot reliably express zlib's
+compression behavior. Three nonleakage, operation and reproducibility tests pass.
