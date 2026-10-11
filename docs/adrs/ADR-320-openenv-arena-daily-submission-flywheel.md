@@ -73,6 +73,16 @@ Not a validation of the design; an honest limit on it.
 - Competitive context: four more environments aimed at the unscored domains (Derivation Check, Five Desks, Reconcile Lab, Shifting Desks) were public or in training on 2026-10-09, after Audit Trail produced the first security point; any further score there raises the bar. The office-only request of 2026-10-10 tied the two leaders at 6/40 through best-per-domain scoring; outright first needs 7, and the four domains where we score 0 are the cheapest place to find the seventh point.
 - Open before enabling the timer: `checks.expectEnvCommit`, gate public key, seeding the incumbent from a validated submission, and a real submission through `codex-submit.sh`.
 
+### Decision 26: learn27b-3d result (200 steps, partial reward, 2026-10-11)
+
+Measured, held-out split, 16 instances per cell, paired by seed, 95% bootstrap (base = untrained Qwen3.8-27B, trained = LoRA after 200 GRPO steps).
+
+- H1' (finance_ledger, math_route, security_triage, science_calibration; the trained families): mean reward 0.156 to 0.207, pooled +0.051 [+0.007, +0.094]; full solves 0 of 128 on both arms, dSolved 0.000. Not supported on the pre-registered full-solve criterion.
+- H2' (software_change, office_reconciliation, industrial_schedule, media_timeline; untrained families): pooled dReward +0.039 [-0.012, +0.088]; full solves 7 of 128 (5.5%) to 10 of 128 (7.8%), dSolved +0.023 [-0.031, +0.078]. Not supported. Only office_reconciliation moved on both reward and full solves (d2 dSolved +0.250 [+0.063, +0.438]); software_change fell (d2 dReward -0.156 [-0.344, +0.016]).
+- Malformed replies fell from 3.1% / 4.7% of episodes to 0.8% / 0.0%.
+
+Reading: 200 steps of partial-credit reward raised partial reward and reply validity but did not produce a single new full solve on the trained families. The arena scores full solves, so the partial-credit shape is not what moves the board. Under d20 no reward-shape or prompt change ships without a paired held-out win; none is shipped. Next experiment candidate: binary reward on cells where the base full-solve rate is mid-band, which needs the base rate per cell first.
+
 ## Evidence
 
 Commits `5923040a`, `f4c0e42b`, `6637b2fa`, `978ab069` (flywheel, 330 tests: 328 pass, 2 opt-in skipped; mutation-checked; two adversarial reviews plus a local codex review). Cross-run analysis from the public leaderboard and Trackio, 2026-10-09. Second run `fd70ac7bb85a1e8469f38039` (board post #99, 2026-10-10): 4/40, account 6/40 by best-per-domain; Trackio summary of 265 updates. `ruvector` 0.1.1 (a separate lane) shipped the same day; unrelated to this ADR. SOTA notes (abstract-level, not full-paper reads): few-environment RL overfits (Agent World Model), RL lifts pass@1 only where the base model sometimes succeeds (Yue et al., arXiv 2504.13837).
