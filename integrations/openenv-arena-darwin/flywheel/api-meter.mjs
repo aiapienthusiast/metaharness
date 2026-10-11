@@ -25,9 +25,15 @@ export function priceFor(provider, model = '') {
     if (m.includes('sonnet')) return { in: 5, out: 25 };
     return { in: 15, out: 75 }; // opus, fable and anything unknown
   }
-  if (/nano/.test(m)) return { in: 0.3, out: 1.2 };
-  if (/mini/.test(m)) return { in: 1.5, out: 6 };
-  if (/^(gpt-5|o3|o1|gpt-4\.1|gpt-4o|codex)/.test(m)) return { in: 3, out: 15 };
+  // OpenAI: each figure sits modestly above the published list price for that family (list prices as last known); unknown models fall through to a high default.
+  if (/gpt-5.*nano|gpt-4\.1.*nano/.test(m)) return { in: 0.12, out: 0.9 };
+  if (/gpt-5.*mini/.test(m)) return { in: 0.4, out: 3.2 };
+  if (/o4-mini|o3-mini/.test(m)) return { in: 1.5, out: 6 };
+  if (/gpt-4\.1.*mini/.test(m)) return { in: 0.6, out: 2.4 };
+  if (/^gpt-5/.test(m)) return { in: 1.5, out: 12 };
+  if (/^(o3|o1)(?!-mini)/.test(m)) return { in: 2.5, out: 10 };
+  if (/^gpt-4\.1/.test(m)) return { in: 2.5, out: 10 };
+  if (/^gpt-4o/.test(m)) return { in: 3, out: 12 };
   return { in: 5, out: 25 };
 }
 

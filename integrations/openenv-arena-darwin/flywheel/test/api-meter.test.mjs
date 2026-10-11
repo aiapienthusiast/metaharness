@@ -27,9 +27,11 @@ const rows = (f) => readFileSync(f, 'utf8').trim().split('\n').map((l) => JSON.p
 test('prices are overestimates and cost math follows the usage shapes', () => {
   assert.deepEqual(priceFor('anthropic', 'claude-opus-5-5'), { in: 15, out: 75 });
   assert.deepEqual(priceFor('anthropic', 'claude-sonnet-5-5'), { in: 5, out: 25 });
-  assert.deepEqual(priceFor('openai', 'gpt-5-mini'), { in: 1.5, out: 6 });
+  assert.deepEqual(priceFor('openai', 'gpt-5-mini'), { in: 0.4, out: 3.2 });
+  assert.deepEqual(priceFor('openai', 'gpt-5'), { in: 1.5, out: 12 });
+  assert.deepEqual(priceFor('openai', 'some-new-model'), { in: 5, out: 25 });
   assert.ok(Math.abs(costOf('anthropic', 'claude-sonnet-5-5', { input_tokens: 1e6, output_tokens: 1e6 }) - 30) < 1e-9);
-  assert.ok(Math.abs(costOf('openai', 'gpt-5', { prompt_tokens: 1e6, completion_tokens: 0, prompt_tokens_details: { cached_tokens: 1e6 } }) - 1.5) < 1e-9);
+  assert.ok(Math.abs(costOf('openai', 'gpt-5', { prompt_tokens: 1e6, completion_tokens: 0, prompt_tokens_details: { cached_tokens: 1e6 } }) - 0.75) < 1e-9);
   assert.equal(costOf('anthropic', 'x', {}), null);
   assert.deepEqual(usageFromEvent({ type: 'message_delta', usage: { output_tokens: 5 } }), { kind: 'delta', usage: { output_tokens: 5 } });
   assert.ok(reservationFor('anthropic', 'claude-opus-5-5', 3000, { max_tokens: 1000 }) > 0.07);
@@ -86,6 +88,6 @@ test('OpenAI streaming requests are asked for usage, and the final chunk is pric
   await r.call('/openai/v1/chat/completions', { model: 'gpt-5', stream: true, max_tokens: 500 }, { authorization: `Bearer ${TOKEN}` });
   assert.equal(JSON.parse(r.seen[0].body).stream_options.include_usage, true);
   assert.equal(r.seen[0].headers.authorization, 'Bearer REAL-OPENAI-KEY');
-  assert.ok(Math.abs(rows(r.ledger)[0].usd - (1000 * 3 + 200 * 15) / 1e6) < 1e-9);
+  assert.ok(Math.abs(rows(r.ledger)[0].usd - (1000 * 1.5 + 200 * 12) / 1e6) < 1e-9);
   await r.done();
 });
