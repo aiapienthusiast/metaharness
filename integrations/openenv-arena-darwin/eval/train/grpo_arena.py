@@ -13,6 +13,9 @@ block stays in earlier assistant turns, which the chat template would strip at i
 import argparse, json, os, random, sys, time
 
 TRAIN_LO, TRAIN_HI = 2_000_000, 3_000_000  # must match eval/paired/splits.mjs
+EVAL_SPLITS = {"heldout": (900_000, 910_000), "select": (910_000, 920_000)}  # ditto
+SOLVED = 0.999  # reward at or above this counts as a full solve
+DECODE = {"greedy": False}
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--env-dir", required=True, help="directory that contains the arena_env package (the environment variant)")
@@ -34,6 +37,18 @@ ap.add_argument("--gen-batch", type=int, default=4, help="episodes sampled at on
 ap.add_argument("--seed", type=int, default=0)
 ap.add_argument("--out", required=True)
 ap.add_argument("--dry-rollout", action="store_true", help="run one rollout batch and print stats, no training")
+ap.add_argument("--reward-mode", choices=["partial", "binary"], default="partial",
+                help="training reward: the environment's own reward, or 1.0 only for a full solve")
+ap.add_argument("--adapter", default=None, help="load a saved LoRA adapter (used with --eval-only)")
+ap.add_argument("--eval-only", action="store_true", help="evaluate (base model, or --adapter) and exit; no training")
+ap.add_argument("--eval-split", choices=["heldout", "select"], default=None,
+                help="run evaluation episodes on this seed range: before training (tag base) and after it (tag trained)")
+ap.add_argument("--eval-families", nargs="+", default=None, help="families to evaluate on (default: the training families)")
+ap.add_argument("--eval-difficulties", type=int, nargs="+", default=None)
+ap.add_argument("--eval-instances", type=int, default=16, help="instances per cell; the same seeds for every tag, so arms are paired")
+ap.add_argument("--eval-repeats", type=int, default=1, help="samples per instance")
+ap.add_argument("--eval-decoding", choices=["sample", "greedy"], default="sample")
+ap.add_argument("--eval-tag", default="eval", help="output folder name for --eval-only")
 args = ap.parse_args()
 
 sys.path.insert(0, args.env_dir)
@@ -99,7 +114,8 @@ def _generate_chunk(model, seqs):
         ids[i, longest - len(s):] = torch.tensor(s)
         attn[i, longest - len(s):] = 1
     dev = next(model.parameters()).device
-    out = model.generate(input_ids=ids.to(dev), attention_mask=attn.to(dev), do_sample=True, temperature=1.0, top_p=1.0, top_k=0,
+    sampling = {"do_sample": True, "temperature": 1.0, "top_p": 1.0, "top_k": 0} if not DECODE["greedy"] else {"do_sample": False}
+    out = model.generate(input_ids=ids.to(dev), attention_mask=attn.to(dev), **sampling,
                          max_new_tokens=args.max_new, eos_token_id=EOS_IDS, pad_token_id=PAD, output_scores=True, return_dict_in_generate=True)
     gen = out.sequences[:, longest:]
     scores = torch.stack(out.scores, dim=1).float()            # [n, T, V] processed logits (temperature 1.0 -> raw)
@@ -116,13 +132,9 @@ def _generate_chunk(model, seqs):
     return res
 
 
-def rollout_func(prompts, trainer):
-    """One episode per entry of `prompts` (TRL already repeats each prompt `group` times). Returns the TRL rollout dict."""
-    _t0 = time.time()
-    model = trainer.accelerator.unwrap_model(trainer.model)
-    was_training = model.training
-    model.eval()
-    specs = [json.loads(p) for p in prompts]
+def run_episodes(model, specs):
+    """Play one episode per spec with `model` (training and evaluation share this path).
+    -> (prompt_ids, completion_ids, logprobs, env_mask, per-episode state, per-episode chat messages)."""
     n = len(specs)
     envs, msgs, prompt_ids, comp, lps, mask = [], [], [], [], [], []
     state = []  # per episode: dict(done, reward, failure, turns, invalid)
@@ -147,6 +159,7 @@ def rollout_func(prompts, trainer):
             if not hit:
                 state[i].update(done=True, failure="completion_truncated"); continue
             content = tok.decode(gen_ids[:-1], skip_special_tokens=True)
+            msgs[i].append({"role": "assistant", "content": content})
             try:
                 action = ArenaAction.model_validate_json(content)
             except Exception:
@@ -156,6 +169,7 @@ def rollout_func(prompts, trainer):
             except Exception:
                 state[i].update(done=True, failure="environment_step_failed"); continue
             obs_text = obs.model_dump_json()
+            msgs[i].append({"role": "user", "content": obs_text})
             suffix = env_suffix_ids(obs_text)
             comp[i] += suffix; lps[i] += [0.0] * len(suffix); mask[i] += [0] * len(suffix)
             if obs.done:
@@ -163,19 +177,39 @@ def rollout_func(prompts, trainer):
         for i in range(n):
             if not state[i]["done"] and state[i]["turns"] >= args.max_turns:
                 state[i].update(done=True, failure="step_budget_exhausted")
-    if was_training:
-        model.train()
-    # ensure every completion ends on a model token or env token consistently; trim to the completion budget
+    # trim every completion to the completion budget
     for i in range(n):
         if len(comp[i]) > args.max_completion:
             comp[i], lps[i], mask[i] = comp[i][:args.max_completion], lps[i][:args.max_completion], mask[i][:args.max_completion]
+    return prompt_ids, comp, lps, mask, state, msgs
+
+
+def training_reward(s):
+    """The reward the trainer sees: the environment's own, or 1.0 only for a full solve."""
+    if args.debug_reward_format:
+        return 0.0 if s["failure"] == "invalid_json_action" and s["turns"] == 1 else 1.0
+    return (1.0 if s["reward"] >= SOLVED else 0.0) if args.reward_mode == "binary" else s["reward"]
+
+
+def rollout_func(prompts, trainer):
+    """One episode per entry of `prompts` (TRL already repeats each prompt `group` times). Returns the TRL rollout dict."""
+    _t0 = time.time()
+    model = trainer.accelerator.unwrap_model(trainer.model)
+    was_training = model.training
+    model.eval()
+    DECODE["greedy"] = False
+    specs = [json.loads(p) for p in prompts]
+    n = len(specs)
+    prompt_ids, comp, lps, mask, state, _msgs = run_episodes(model, specs)
+    if was_training:
+        model.train()
     rollout_func.last = {"state": state, "turns": [s["turns"] for s in state], "len": [len(c) for c in comp]}
     print("ROLLOUT " + json.dumps({"seconds": round(time.time() - _t0, 1), "episodes": n, "mean_reward": round(sum(x["reward"] for x in state) / n, 3),
                                     "mean_turns": round(sum(rollout_func.last["turns"]) / n, 2), "mean_tokens": round(sum(rollout_func.last["len"]) / n),
                                     "failures": {str(k): [x["failure"] for x in state].count(k) for k in set(x["failure"] for x in state)},
                                     "peak_gpu_gib": round(torch.cuda.max_memory_allocated() / 2**30, 1) if torch.cuda.is_available() else None}), flush=True)
     return {"prompt_ids": prompt_ids, "completion_ids": comp, "logprobs": lps, "env_mask": mask,
-            "episode_reward": [(0.0 if s["failure"] == "invalid_json_action" and s["turns"] == 1 else 1.0) if args.debug_reward_format else s["reward"] for s in state],
+            "episode_reward": [training_reward(s) for s in state],
             "failure": [s["failure"] or "" for s in state]}
 
 
@@ -193,9 +227,49 @@ def make_dataset(n_rows):
     return Dataset.from_dict({"prompt": rows})
 
 
+def evaluate(model, tag):
+    """Run held-out episodes and write them in the layout eval/paired/paired-analyze.mjs reads:
+    <out>/eval/<tag>/<family>_d<difficulty>_s<lo>[_r<rep>].jsonl. Seeds are lo+0..lo+instances-1, identical for every tag."""
+    assert args.eval_split, "evaluate() needs --eval-split"
+    lo, hi = EVAL_SPLITS[args.eval_split]
+    assert args.eval_instances <= hi - lo
+    outdir = os.path.join(args.out, "eval", tag)
+    os.makedirs(outdir, exist_ok=True)
+    was_training = model.training
+    model.eval()
+    DECODE["greedy"] = args.eval_decoding == "greedy"
+    summary, t0 = {}, time.time()
+    for fam in (args.eval_families or args.families):
+        for d in (args.eval_difficulties or args.difficulties):
+            specs = [{"family": fam, "difficulty": d, "seed": lo + k} for k in range(args.eval_instances)]
+            assert all(lo <= s["seed"] < hi for s in specs)
+            cell = f"{fam}_d{d}"
+            for rep in range(args.eval_repeats):
+                *_, state, msgs = run_episodes(model, specs)
+                with open(os.path.join(outdir, f"{cell}_s{lo}{f'_r{rep}' if rep else ''}.jsonl"), "w") as f:
+                    for sp, st, m in zip(specs, state, msgs):
+                        f.write(json.dumps({"type": "episode", "seed": sp["seed"], "reward": st["reward"], "solved": st["reward"] >= SOLVED,
+                                            "failure": st["failure"], "trajectory": {"messages": m, "failure": st["failure"]}}) + "\n")
+                s = summary.setdefault(cell, {"n": 0, "solved": 0, "reward": 0.0})
+                s["n"] += len(state); s["solved"] += sum(1 for st in state if st["reward"] >= SOLVED); s["reward"] += sum(st["reward"] for st in state)
+    DECODE["greedy"] = False
+    if was_training:
+        model.train()
+    total_n = sum(v["n"] for v in summary.values())
+    print("EVAL " + json.dumps({"tag": tag, "split": args.eval_split, "decoding": args.eval_decoding, "seconds": round(time.time() - t0),
+                                "episodes": total_n, "solved_rate": round(sum(v["solved"] for v in summary.values()) / max(1, total_n), 4),
+                                "cells": {c: {"n": v["n"], "solved": v["solved"], "mean_reward": round(v["reward"] / v["n"], 3)} for c, v in summary.items()}}), flush=True)
+
+
 model = AutoModelForCausalLM.from_pretrained(args.model, revision=args.revision, dtype=torch.bfloat16,
                                              device_map={"": 0} if torch.cuda.is_available() else None)
 model.config.use_cache = True
+if args.eval_only:
+    if args.adapter:
+        from peft import PeftModel
+        model = PeftModel.from_pretrained(model, args.adapter)
+    evaluate(model, args.eval_tag)
+    sys.exit(0)
 gb = args.prompts_per_step * args.group
 cfg = GRPOConfig(
     output_dir=args.out, per_device_train_batch_size=1, gradient_accumulation_steps=gb, num_generations=args.group,
@@ -219,10 +293,16 @@ if args.dry_rollout:
                       "mean_len": sum(st["len"]) / len(st["len"]), "max_len": max(st["len"])}))
     sys.exit(0)
 
+if args.eval_split:  # the LoRA B matrices start at zero, so this is the base model, through the same code path as the trained one
+    evaluate(trainer.accelerator.unwrap_model(trainer.model), "base")
 t0 = time.time()
 trainer.train()
+train_seconds = time.time() - t0
+trainer.model.save_pretrained(os.path.join(args.out, "adapter"))
+if args.eval_split:
+    evaluate(trainer.accelerator.unwrap_model(trainer.model), "trained")
 log = [h for h in trainer.state.log_history if "loss" in h or "reward" in h or "rewards/reward_fn/mean" in h]
 json.dump(trainer.state.log_history, open(os.path.join(args.out, "log_history.json"), "w"), indent=1)
 peak = round(torch.cuda.max_memory_allocated() / 2**30, 1) if torch.cuda.is_available() else None
-print(json.dumps({"train_seconds": round(time.time() - t0, 1), "entries": len(log), "peak_gpu_gib": peak, "steps": args.steps,
-                  "seconds_per_step": round((time.time() - t0) / max(1, args.steps), 1)}))
+print(json.dumps({"train_seconds": round(train_seconds, 1), "entries": len(log), "peak_gpu_gib": peak, "steps": args.steps,
+                  "seconds_per_step": round(train_seconds / max(1, args.steps), 1)}))
