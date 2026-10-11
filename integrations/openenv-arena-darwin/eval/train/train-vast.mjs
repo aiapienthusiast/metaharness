@@ -50,6 +50,16 @@ export function remoteCommand(c) {
   return `cd ${REMOTE} && HF_HOME=${c.hfHome} TRL_EXPERIMENTAL_SILENCE=1 TOKENIZERS_PARALLELISM=false PYTORCH_ALLOC_CONF=expandable_segments:True /root/venv/bin/python grpo_arena.py ${args.map(q).join(' ')}`;
 }
 
+/** Start the training detached on the instance, so a dropped ssh session cannot kill a long run. Idempotent: a retried
+ * launch finds the lock directory and does nothing. The exit code of the run lands in REMOTE/DONE. */
+export function detachedTrainCommand(c) {
+  const inner = `${remoteCommand(c)}; echo $? > ${REMOTE}/DONE`;
+  return `mkdir ${REMOTE}/launch.lock 2>/dev/null && { rm -f ${REMOTE}/DONE; setsid nohup bash -c ${q(inner)} > ${REMOTE}/train.log 2>&1 < /dev/null & } ; true`;
+}
+
+/** One poll of the detached run: exit 0 while it runs (printing its last log line), 100 + exit code once it has finished. */
+export const POLL_COMMAND = `if [ -f ${REMOTE}/DONE ]; then c=$(cat ${REMOTE}/DONE); tail -n 3 ${REMOTE}/train.log; exit $((100 + c % 100)); else tail -n 1 ${REMOTE}/train.log 2>/dev/null; exit 0; fi`;
+
 /** scp options matching the ssh ones (key only, no config files, per-run known_hosts). */
 export function scpBase({ port, keyPath, knownHostsFile }) {
   return ['-F', 'none', '-q', '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes', '-o', 'IdentityAgent=none', '-i', keyPath,
@@ -67,8 +77,11 @@ function run(cmd, args, { logFile, timeoutMs } = {}) {
   });
 }
 
+const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
+
 export async function runTraining(raw, runId, { provision = provisionGpu, exec = run, ssh = runSsh,
-  stateDir = path.join(os.homedir(), '.local/state/arena-flywheel'), journal } = {}) {
+  stateDir = path.join(os.homedir(), '.local/state/arena-flywheel'), journal, sleep = sleepMs, retryWaitMs = 20_000, pollMs = 120_000,
+  maxPollFailures = 20, retries = 6 } = {}) {
   const c = validateJob(raw);
   mkdirSync(c.outDir, { recursive: true });
   const jr = journal ?? ((e) => appendFileSync(path.join(c.outDir, 'journal.jsonl'), `${JSON.stringify(e)}\n`));
@@ -79,27 +92,53 @@ export async function runTraining(raw, runId, { provision = provisionGpu, exec =
     gpu = await provision({ runId, config: gpuConfig(c.gpu), stateDir, journal: jr });
     const { host, port, keyPath, knownHostsFile } = gpu.ssh;
     const sshArgs = (command) => sshCommandArgs({ host, port, keyPath, knownHostsFile, command });
+    // ssh and scp exit 255 when they cannot connect. Every command retried here is idempotent (mkdir -p, a copy, pip install, a locked launch).
     const step = async (name, command, timeoutMs) => {
-      jr({ phase: `train.${name}.start` });
-      const code = await exec('ssh', sshArgs(command), { logFile: log, timeoutMs });
-      jr({ phase: `train.${name}.exit`, code });
-      if (code !== 0) throw new Error(`${name} failed with exit code ${code} (see run.log)`);
+      for (let attempt = 1; ; attempt += 1) {
+        jr({ phase: `train.${name}.start`, attempt });
+        const code = await exec('ssh', sshArgs(command), { logFile: log, timeoutMs });
+        jr({ phase: `train.${name}.exit`, code });
+        if (code === 0) return;
+        if (code === 255 && attempt < retries) { await sleep(retryWaitMs); continue; }
+        throw new Error(`${name} failed with exit code ${code} (see run.log)`);
+      }
     };
     await step('mkdir', `mkdir -p ${REMOTE}/env ${REMOTE}/out`, 120_000);
     for (const [src, dst] of [[c.script, `${REMOTE}/grpo_arena.py`], [path.join(c.envDir, 'arena_env'), `${REMOTE}/env/`]]) {
-      const code = await exec('scp', [...scpBase({ port, keyPath, knownHostsFile }), ...(isDir(src) ? ['-r'] : []), src, `root@${host}:${dst}`], { logFile: log, timeoutMs: 300_000 });
-      jr({ phase: 'train.upload', src: path.basename(src), code });
-      if (code !== 0) throw new Error(`upload of ${path.basename(src)} failed (exit ${code})`);
+      for (let attempt = 1; ; attempt += 1) {
+        const code = await exec('scp', [...scpBase({ port, keyPath, knownHostsFile }), ...(isDir(src) ? ['-r'] : []), src, `root@${host}:${dst}`], { logFile: log, timeoutMs: 300_000 });
+        jr({ phase: 'train.upload', src: path.basename(src), code, attempt });
+        if (code === 0) break;
+        if (code === 255 && attempt < retries) { await sleep(retryWaitMs); continue; }
+        throw new Error(`upload of ${path.basename(src)} failed (exit ${code})`);
+      }
     }
     await step('setup', c.setup, 40 * 60_000);
-    await step('train', remoteCommand(c), c.runTimeoutMin * 60_000);
+    await step('launch', detachedTrainCommand(c), 120_000);
+    const deadline = Date.now() + c.runTimeoutMin * 60_000;
+    let failures = 0, finished = null;
+    while (finished === null) {
+      const code = await exec('ssh', sshArgs(POLL_COMMAND), { logFile: log, timeoutMs: 120_000 });
+      if (code >= 100 && code < 200) { finished = code - 100; break; } // 255 is ssh failing to connect, not a finished run
+      failures = code === 0 ? 0 : failures + 1;
+      if (failures > maxPollFailures) throw new Error(`train: lost contact with the instance (${failures} failed polls in a row)`);
+      if (Date.now() > deadline) throw new Error(`train: run timeout after ${c.runTimeoutMin} min`);
+      await sleep(pollMs);
+    }
+    jr({ phase: 'train.exit', code: finished });
+    if (finished !== 0) throw new Error(`train failed with exit code ${finished} (see run.log)`);
     result = { ok: true };
   } catch (e) { error = e; jr({ phase: 'train.error', error: String(e.message).slice(0, 300) }); }
   finally {
     if (gpu?.ssh) { // results are fetched even after a failed run: the log and any partial output are the diagnosis
       const { host, port, keyPath, knownHostsFile } = gpu.ssh;
-      const code = await exec('scp', [...scpBase({ port, keyPath, knownHostsFile }), '-r', `root@${host}:${REMOTE}/out`, c.outDir], { logFile: log, timeoutMs: 600_000 });
-      jr({ phase: 'train.download', code });
+      for (let attempt = 1; attempt <= retries; attempt += 1) { // a flaky link (exit 255) must not cost the results
+        const code = await exec('scp', [...scpBase({ port, keyPath, knownHostsFile }), '-r', `root@${host}:${REMOTE}/out`, c.outDir], { logFile: log, timeoutMs: 600_000 });
+        jr({ phase: 'train.download', code, attempt });
+        if (code !== 255) break;
+        await sleep(retryWaitMs);
+      }
+      await exec('scp', [...scpBase({ port, keyPath, knownHostsFile }), `root@${host}:${REMOTE}/train.log`, path.join(c.outDir, 'train.log')], { logFile: log, timeoutMs: 120_000 });
     }
     if (gpu) { const t = await gpu.teardown(); jr({ phase: 'teardown', ...t }); if (!t.confirmed && !error) error = new Error('teardown not confirmed; the watchdog stays armed'); }
   }
