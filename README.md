@@ -50,7 +50,7 @@ The model is replaceable. The harness is the product.
 <!-- ecosystem-cta:start -->
 ### Explore the wider ecosystem
 
-[![MetaHarness: Your harness. Your next horizon. Explore Cognitum One.](docs/assets/visuals/ecosystem-cta.svg)](https://cognitum.one/)
+[![MetaHarness: explore Cognitum One. Conceptual project-to-destination animation.](docs/assets/visuals/ecosystem-cta.svg)](https://cognitum.one/)
 
 Building a custom harness? Explore Cognitum One and ruOS.
 
