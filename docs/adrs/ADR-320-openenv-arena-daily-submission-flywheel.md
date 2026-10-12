@@ -123,6 +123,17 @@ Note on reply parsing (2026-10-12): the arena guide (AGENTS.md, "How the model s
 ### Result of tonight's arena entry (2026-10-12)
 `metaharness-mix8-20261012`, run 9b4d8ace31173c7ce5155869, 276 updates: 4/40 (industrial 2, finance 1, office 1), equal to the untrained 4/40. Trackio: reward mean 0.177, gradient on 132 of 276 steps, mean frac_reward_zero_std 0.52. Account best per domain is now 8/40 (office 3, industrial 2, finance 1, media 1, software 1), 2 above the next entrants at 6/40, but it is a composite of four runs (4, 4, 2, 4) and the board's null control (#161, no gradient, 1/40; zero-learning runs span 1 to 4) shows selection over noisy draws can produce such a lead. No method effect is claimed. Posted: board #162, #swarm, federation pub:showcase, core-memory#147.
 
+### Decision 30: learn27b-5a result (replication, training seed 1, untouched confirm split, 2026-10-12)
+
+Measured exactly as pre-registered in decision 29: confirm split, 24 instances per cell, d1 and d2 for the criteria (d3 evaluated and held for the run B comparison), strict scoring, paired by seed, 95% bootstrap over evaluated episodes. GPU torn down and confirmed.
+
+- H5 (replication): office_reconciliation + software_change, d1 and d2 pooled, 96 episodes per arm: full-solve rate 4.2% to 25.0%, dSolved +0.208 [+0.115, +0.302]; dReward +0.182 [+0.104, +0.258]. Holds. By cell: office d1 +0.375 [+0.125, +0.625], office d2 +0.333 [+0.125, +0.542], software d1 +0.083 [0.000, +0.208], software d2 +0.042 [0.000, +0.125].
+- H5h (harm): other six families, d1 and d2 pooled, 288 episodes per arm: dReward +0.045 [+0.020, +0.071]; lower bound above -0.05. Holds. Full solves 0.7% to 0.7% (no transfer of solves).
+- G1 (security_triage, d1 and d2 pooled): dReward +0.104 [+0.042, +0.174], above the -0.10 bound. Holds.
+- G2 (truncation): 0 of 288 trained episodes on the other six families were completion_truncated (base 16 of 288), below the 15% limit. Holds. Invalid-JSON replies fell from 16 to 1 of 288.
+
+Reading: the decision 28 gain (seed 0, 7.3% to 30.2%) reproduces on a new training seed and on tasks never used before (4.2% to 25.0%), so two seeds now agree in direction and rough size. Still the same recipe, the same two families, our generators and strict scoring; not an arena score, and run B (difficulty 3) is judged separately.
+
 ## Evidence
 
 Commits `5923040a`, `f4c0e42b`, `6637b2fa`, `978ab069` (flywheel, 330 tests: 328 pass, 2 opt-in skipped; mutation-checked; two adversarial reviews plus a local codex review). Cross-run analysis from the public leaderboard and Trackio, 2026-10-09. Second run `fd70ac7bb85a1e8469f38039` (board post #99, 2026-10-10): 4/40, account 6/40 by best-per-domain; Trackio summary of 265 updates. `ruvector` 0.1.1 (a separate lane) shipped the same day; unrelated to this ADR. SOTA notes (abstract-level, not full-paper reads): few-environment RL overfits (Agent World Model), RL lifts pass@1 only where the base model sometimes succeeds (Yue et al., arXiv 2504.13837).
