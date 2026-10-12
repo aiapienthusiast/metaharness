@@ -13,7 +13,7 @@ block stays in earlier assistant turns, which the chat template would strip at i
 import argparse, json, os, random, sys, time
 
 TRAIN_LO, TRAIN_HI = 2_000_000, 3_000_000  # must match eval/paired/splits.mjs
-EVAL_SPLITS = {"heldout": (900_000, 910_000), "select": (910_000, 920_000)}  # ditto
+EVAL_SPLITS = {"heldout": (900_000, 910_000), "select": (910_000, 920_000), "confirm": (920_000, 930_000)}  # ditto
 SOLVED = 0.999  # reward at or above this counts as a full solve
 DECODE = {"greedy": False}
 
@@ -41,7 +41,7 @@ ap.add_argument("--reward-mode", choices=["partial", "binary"], default="partial
                 help="training reward: the environment's own reward, or 1.0 only for a full solve")
 ap.add_argument("--adapter", default=None, help="load a saved LoRA adapter (used with --eval-only)")
 ap.add_argument("--eval-only", action="store_true", help="evaluate (base model, or --adapter) and exit; no training")
-ap.add_argument("--eval-split", choices=["heldout", "select"], default=None,
+ap.add_argument("--eval-split", choices=["heldout", "select", "confirm"], default=None,
                 help="run evaluation episodes on this seed range: before training (tag base) and after it (tag trained)")
 ap.add_argument("--eval-families", nargs="+", default=None, help="families to evaluate on (default: the training families)")
 ap.add_argument("--eval-difficulties", type=int, nargs="+", default=None)

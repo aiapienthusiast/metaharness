@@ -4,6 +4,7 @@
 // disjoint instances. Three roles:
 //   heldout  [900_000, 910_000)    the powered test set; no training or cell selection may ever use these seeds
 //   select   [910_000, 920_000)    learnability / difficulty-band measurements used to CHOOSE training cells
+//   confirm  [920_000, 930_000)    untouched confirmation set: used only to judge pre-registered replication runs, never to pick anything
 //   train    [2_000_000, 3_000_000) instances a training run may sample
 // A cell-level choice made on `select` is then evaluated on `heldout`: the two never share an instance.
 //
@@ -11,10 +12,11 @@
 export const SPLITS = Object.freeze({
   heldout: [900_000, 910_000],
   select: [910_000, 920_000],
+  confirm: [920_000, 930_000],
   train: [2_000_000, 3_000_000],
 });
 
-/** 'heldout' | 'select' | 'train' | null for a seed. */
+/** 'heldout' | 'select' | 'confirm' | 'train' | null for a seed. */
 export function seedSplit(seed) {
   if (!Number.isInteger(seed)) return null;
   for (const [name, [lo, hi]] of Object.entries(SPLITS)) if (seed >= lo && seed < hi) return name;
