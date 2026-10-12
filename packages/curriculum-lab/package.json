@@ -14,13 +14,17 @@
   "files": [
     "src/*.mjs",
     "examples/*.py",
+    "examples/*.mjs",
     "examples/*.json",
+    "examples/learning-requirements.txt",
     "README.md",
     "DESIGN.md"
   ],
   "scripts": {
     "test": "node --test test/*.test.mjs && python3 -m unittest discover -s test -p \"test_*.py\"",
     "smoke": "python3 examples/local_learning.py",
+    "learning:test": "python3 examples/learning_checks.py",
+    "learning:search": "node --experimental-transform-types examples/learning_search.mjs",
     "lint": "node --check src/index.mjs && node --check src/providers.mjs && node --check src/cli.mjs"
   },
   "engines": {

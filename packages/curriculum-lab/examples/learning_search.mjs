@@ -23,13 +23,15 @@ const env={PATH:process.env.PATH,OPENBLAS_NUM_THREADS:'1',OMP_NUM_THREADS:'1',MK
 const driver=join(base,'tabular_learning.py');
 const manifest=JSON.parse(execFileSync(python,[driver,'manifest'],{env}).toString());
 const directory=resolve(process.argv[2]);
+const axis=process.argv[3]||'curriculum';
+if(!['curriculum','learning_rate'].includes(axis))throw Error('unsupported_axis');
 await mkdir(directory,{recursive:true,mode:0o700});
 const hashfile=async p=>createHash('sha256').update(await readFile(p)).digest('hex');
 const plan={schema:1,engine:'@metaharness/darwin@0.10.3/evolveNumeric',
   sources:{driver:await hashfile(driver),runner:await hashfile(fileURLToPath(import.meta.url)),
     engine:await hashfile(fileURLToPath(new URL('../../darwin-mode/src/numeric-evolve.ts',import.meta.url))),
     mutator:await hashfile(fileURLToPath(new URL('../../darwin-mode/src/numeric-mutator.ts',import.meta.url)))},
-  manifest,genomeSpec:{hard_fraction:{min:0,max:1,type:'float',scale:'linear',default:0}},
+  manifest,axis,genomeSpec:axis==='curriculum'?{hard_fraction:{min:0,max:1,type:'float',scale:'linear',default:0}}:{learning_rate:{min:.05,max:.4,type:'float',scale:'log',default:.1}},
   generations:3,childrenPerGeneration:2,seed:17011,mutationSigma:.35,
   baselines:[0,.5],discoverySeeds:[11,23,37],confirmationSeeds:[101,113,127,139,151,163,179,191,211,223],
   gradientUpdates:64,batchSize:64,learningRate:.1,l2:.001,
@@ -87,7 +89,10 @@ const report={planHash:digest(plan),selectedGenome:chosen,discoveryControls:cont
   discoveryWinner:{primary:winner.score.primary,familyMeans:winner.score.raw.familyMeans},discoveryPass,
   generations:3,lineage:result.winnerLineage,variants:result.records.length,confirmation,
   decision:confirmation?.pass?'MEASURED_LEARNING_GAIN':'HOLD_NO_CONFIRMED_GAIN',
-  experimentSeconds:(Date.now()-started)/1000,externalCalls:0,providerCostUsd:0,
+  experimentSeconds:(Date.now()-started)/1000,executedEvaluations:fits,externalCalls:0,providerCostUsd:0,
   rsi:'NOT_ESTABLISHED',promote:false,signed:false,limits:plan.limits};
-await writeFile(join(directory,'report.json'),JSON.stringify(report,null,2));
+// Do not replace the first timing/result receipt with a fast cache replay.
+try{await writeFile(join(directory,'report.json'),JSON.stringify(report,null,2),{flag:'wx'});}
+catch(e){if(e.code!=='EEXIST')throw e;
+  await writeFile(join(directory,`replay-${digest(report)}.json`),JSON.stringify(report,null,2));}
 console.log(JSON.stringify({...report,confirmation:confirmation?{comparisons:confirmation.comparisons,pass:confirmation.pass,candidate:confirmation.candidate.familyMeans,controls:confirmation.controls.map(c=>c.familyMeans)}:null}));

@@ -58,15 +58,17 @@ def train(X,y,indices,seed,hard_fraction,updates=64,batch_size=64,rate=.1):
     return W,trace
 
 def evaluate(genome,phase,directory):
-    fraction=genome['hard_fraction']
+    fraction=genome.get('hard_fraction',.5)
+    rate=genome.get('learning_rate',.1)
     if not 0<=fraction<=1: raise ValueError('unsupported_genome')
+    if not .01<=rate<=1: raise ValueError('unsupported_learning_rate')
     seeds=[11,23,37] if phase=='discovery' else [101,113,127,139,151,163,179,191,211,223]
     rows=[]; start=time.perf_counter()
     for family in ('digits','wine'):
         X,y,tr,dev,test=data(family)
         target=dev if phase=='discovery' else test
         for seed in seeds:
-            W,trace=train(X,y,tr,seed,fraction)
+            W,trace=train(X,y,tr,seed,fraction,rate=rate)
             predicted=np.argmax(X[target]@W,axis=1)
             row={'family':family,'seed':seed,'balancedAccuracy':float(balanced_accuracy_score(y[target],predicted)),
                  'prediction':predicted.tolist(),'targetIds':target.tolist(),

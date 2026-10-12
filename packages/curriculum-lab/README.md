@@ -70,6 +70,48 @@ References checked 2026-10-11:
 * https://huggingface.co/docs/inference-providers/tasks/chat-completion
 # Live HF integration check
 
+## Measured local learning search
+
+The full repository `@metaharness/darwin@0.10.3` `evolveNumeric` engine now runs
+bounded real softmax training experiments on the public scikit-learn digits and
+wine datasets. This is optional research code requiring a repository checkout,
+Node 24 and the scientific versions in `examples/learning-requirements.txt`.
+It does not train an LLM, claim general RSI, or invoke providers.
+
+```sh
+python3 packages/curriculum-lab/examples/learning_checks.py
+node --experimental-transform-types packages/curriculum-lab/examples/learning_search.mjs /absolute/new-evidence-directory learning_rate
+```
+
+The engine freezes dataset/split/source hashes, compares uniform and 50% hard
+sampling controls, searches one parameter for three generations, and uses ten
+fresh paired training seeds on untouched confirmation examples only after a
+discovery win. Each fit gets 64 updates of 64 examples. Sampling uses cached
+training loss; no held-out labels enter training. Checkpoints, predictions,
+sampled training IDs, rejected variants and receipts are retained. Replays reuse
+completed results. Supply `CURRICULUM_PYTHON` only to select a trusted interpreter.
+
+The October 11 Toronto experiment rejected curriculum-only tuning. Learning-rate
+search selected 0.4 with hard-sampling fraction fixed at 0.5. On confirmation,
+digit balanced accuracy improved from 94.6079% for the stronger control to
+96.0383%; wine remained 100%. Macro gain was 0.7152 percentage points. The paired
+seed 95% lower bound was 0.5082 points, conditional on one fixed data split.
+Sixty saved checkpoints and 11,880 predictions replayed independently.
+
+These are small-data learning-efficiency results, not evidence that Darwin beats
+equal-budget random/grid search, improves its own optimizer, or transfers to an
+LLM. The winning value appeared in generation one. No such stronger claim is
+earned by running more generations. Wall timings are retained but no latency
+improvement is claimed. The result is unsigned experimental evidence; Autogenous
+and signed Flywheel promotion are not invoked, and there is no deployment.
+
+See `evidence/learning-summary-20261012.json` and the complete compressed evidence
+bundle. The first reporting implementation replaced a timing field on replay;
+the summary distinguishes observed original runtime from replay runtime. Reports
+are now retained separately. An incomplete receipt still blocks execution.
+
+## HF provider path
+
 After explicit spending authorization, the reviewed ruOS host can run
 `python3 examples/hf_e2e.py /absolute/private/evidence-directory`.
 Pin and verify all source files first. This loads only HF_TOKEN from the protected

@@ -115,6 +115,13 @@ async function writeExclusive(path, value) {
 export async function once(directory, identity, operation) {
   await mkdir(directory,{recursive:true,mode:0o700});
   const key=digest(identity), receiptPath=join(directory,`${key}.json`), lockPath=join(directory,`${key}.lock`);
+  // A completed immutable receipt is authoritative even after a process died
+  // between committing it and removing its lock. Never re-execute to recover.
+  try {
+    const saved=JSON.parse(await readFile(receiptPath,'utf8'));
+    assert(saved.key===key && saved.receiptHash===digest(saved.receipt), 'receipt_corrupt');
+    return {...saved.receipt,reused:true};
+  } catch(e) { if(e.code!=='ENOENT') throw e; }
   let lock;
   try { lock=await open(lockPath,'wx',0o600); } catch { throw new Error('operation_locked'); }
   try {

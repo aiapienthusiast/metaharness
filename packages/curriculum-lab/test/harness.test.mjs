@@ -10,6 +10,14 @@ const spec=()=>structuredClone(fixture);
 const dir=async t=>{const p=await mkdtemp(join(tmpdir(),'curriculum-'));t.after(()=>rm(p,{recursive:true,force:true}));return p;};
 const response=d=>({ok:true,text:async()=>JSON.stringify(d)});
 const permit=s=>({specHash:digest(s),owner:'test-owner',operations:['hf_propose','vast_dispatch'],expiresAt:Date.now()+60000,model:'openai/gpt-oss-120b:groq',maxRequestUsd:.01,instanceId:42,maxJobUsd:.1,runnerHash:'a'.repeat(64),manifestHash:'b'.repeat(64)});
+
+test('completed receipt survives stale lock without re-execution',async t=>{
+ const d=await dir(t),identity={case:'crash_after_commit'};let calls=0;
+ await once(d,identity,async()=>{calls++;return {status:'complete'};});
+ await writeFile(join(d,digest(identity)+'.lock'),'');
+ const result=await once(d,identity,async()=>{calls++;return {status:'wrong'};});
+ assert.equal(result.reused,true);assert.equal(result.status,'complete');assert.equal(calls,1);
+});
 const episodes=(s,mixed)=>s.cells.flatMap(cell=>Array.from({length:s.attempts},(_,attempt)=>({cell,attempt,status:'complete',success:mixed ? attempt===0 : false,trajectoryHash:digest({cell,attempt})})));
 
 test('registration rejects seed/family overlap, invalid accounting and NaN',()=>{
