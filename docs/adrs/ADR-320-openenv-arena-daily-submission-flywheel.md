@@ -157,6 +157,15 @@ Stage 2b (training and test): run-A recipe (Qwen3.8-27B, LoRA r16, lr 5e-5, grou
 - H (harm): the other seven families at d1 and d2 pooled, dReward lower bound above -0.05; separate gates as in d29: security_triage d1/d2 dReward lower bound above -0.10; truncated replies at most 15% of trained episodes on the other families.
 Decision: if T1, T2 and the harm gates hold, rung tasks (the exact knob task IDs) become a candidate addition to a later arena task list, with the caveat that this is local evidence only; if T2 holds but T1 fails, a rung is learnable but does not transfer to the standard cells, and the lever is closed for science; otherwise closed. One run, no changes after results are seen. Limits: one training seed; intervals cover evaluated episodes, not training-seed variance; local generators and recipe, not the arena's.
 
+### Decision 33: result of the stage 2a rung scan; the stage 2b transfer test is closed (2026-10-12)
+
+Measured as pre-registered in decision 32: base Qwen3.8-27B, `select` split (seeds 910000 to 919999), 24 instances per cell, strict scoring, d1 and d2, 14 knob cells. GPU torn down and confirmed (0.385 h, about 0.40 USD).
+- science_calibration, sample_count_delta in {-2, -1, +1, +2}, d1 and d2 (8 cells): 0 of 24 full solves in every cell, mean reward 0.01 to 0.05.
+- software_change, suite_count_delta in {-1, +1, +2}, d1 and d2 (6 cells): 0 or 1 of 24 (0.0% to 4.2%), mean reward 0.08 to 0.25.
+No cell reaches the rung threshold (at least 3 of 24). By the decision 32 rule the science transfer test (stage 2b) is closed with no training run, and no knob cell is added to any task list. The bounded knobs do not make these tasks easier for the base model; they only move reward slightly.
+
+What this leaves: within the environment as it stands, the only levers that raised full solves are binary-reward training on office_reconciliation and software_change (d27 to d31). Making the zero-solve families learnable would need new task content (genuinely easier variants, or demonstrations), which the knobs cannot provide. That is a build of a new or extended environment image, not a training run, and it is not started.
+
 ## Evidence
 
 Commits `5923040a`, `f4c0e42b`, `6637b2fa`, `978ab069` (flywheel, 330 tests: 328 pass, 2 opt-in skipped; mutation-checked; two adversarial reviews plus a local codex review). Cross-run analysis from the public leaderboard and Trackio, 2026-10-09. Second run `fd70ac7bb85a1e8469f38039` (board post #99, 2026-10-10): 4/40, account 6/40 by best-per-domain; Trackio summary of 265 updates. `ruvector` 0.1.1 (a separate lane) shipped the same day; unrelated to this ADR. SOTA notes (abstract-level, not full-paper reads): few-environment RL overfits (Agent World Model), RL lifts pass@1 only where the base model sometimes succeeds (Yue et al., arXiv 2504.13837).
