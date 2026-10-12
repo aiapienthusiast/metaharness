@@ -170,3 +170,39 @@ not establish an adaptive-search advantage, transfer learning, or recursive
 self-improvement. Further work should test a changed optimizer policy on training
 workloads before opening newly frozen, genuinely distinct confirmation workloads.
 These exposed confirmation partitions must not become fresh holdouts again.
+
+### Search-policy transfer check (2026-10-12 UTC)
+
+```sh
+npm run learning:policy --prefix packages/curriculum-lab -- /absolute/policy/evidence
+python3 packages/curriculum-lab/examples/policy_checks.py /absolute/policy/evidence
+```
+
+A single hand-proposed change reduces Darwin mutation sigma from 0.35 to 0.12,
+following boundary-clamping failures in the exposed earlier benchmark. The new
+frozen evaluation uses two synthetic classification configurations and eight
+independently seeded populations. Actual `evolveNumeric` runs with seven unique
+candidate evaluations per policy, compared with seven random-search candidates
+and fixed learning rate 0.4. All methods retain identical training semantics,
+64 updates per fit, and separate selection/confirmation fit seeds. The engine
+stops before an eighth unique evaluation; complete callback receipts retain the
+partial final generation even if its archive scores are not yet saved.
+
+**Rejected: HOLD_NO_CONFIRMED_POLICY_GAIN.** Smaller sigma loses 1.5315 percentage
+points against incumbent Darwin and 0.7625 points against random search on mean
+confirmation accuracy. Its 0.6250-point advantage over the fixed anchor has a
+negative 95% lower bound and also fails the gate. Do not change the incumbent
+policy. Narrowing around a previously successful anchor did not transfer well.
+
+All 180 unique evaluations, 836 real softmax fits, 200,640 predictions and 53,504
+training trace steps are retained and independently checked. Repeat execution
+reuses all receipts with zero training fits. Thirty-two focused tests pass. No
+provider calls, rentals or additional inference spend occurred. Full evidence
+and archive SHA256 are in `evidence/policy-summary-20261012.json` and the adjacent
+`policy-evidence-20261012.tar.gz`. All decisions remain unsigned and unpromoted.
+
+This is a controlled policy hypothesis test, not autonomous recursive improvement
+or LLM training. Both new families use the same synthetic generator, which limits
+transfer claims. The next meaningful direction is a learned search prior trained
+across task families, evaluated on genuinely unseen families against the same
+strong controls; these exposed results cannot serve as fresh confirmation again.
