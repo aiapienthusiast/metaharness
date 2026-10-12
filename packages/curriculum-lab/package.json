@@ -28,7 +28,8 @@
     "lint": "node --check src/index.mjs && node --check src/providers.mjs && node --check src/cli.mjs",
     "learning:compare": "node --experimental-transform-types examples/optimizer_comparison.mjs",
     "learning:policy": "node --experimental-transform-types examples/policy_search.mjs",
-    "learning:prior": "python3 examples/learned_prior.py"
+    "learning:prior": "python3 examples/learned_prior.py",
+    "agent:test": "python3 examples/agent_task_checks.py && python3 examples/agent_experiment_checks.py"
   },
   "engines": {
     "node": ">=20"

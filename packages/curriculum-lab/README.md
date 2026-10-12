@@ -245,3 +245,39 @@ experimental package, not a Darwin-engine run, LLM weight training, or RSI.
 Further rounds should justify a materially different workload or model before
 spending more effort on this low-dimensional learning-rate search. Preserve all
 failed priors and exposed holdouts; do not weaken acceptance thresholds.
+
+### Concurrent HF agent pilot (2026-10-12 UTC)
+
+`examples/agent_experiment.py` implements four concurrent lanes: two-round prompt
+reflection, a matched independent-proposal control, bounded strategy configuration,
+and its matched control. The host renders allowlisted strategy values; it never
+executes model-generated code. These are inspired experiments, not implementations
+of GEPA or DGM. Six training and twelve confirmation scheduling/atomic-ledger tasks
+use deterministic verifiers, independently checked by `agent_task_checks.py`.
+They test new instances of the same families, not unseen-family transfer.
+
+All selected candidates are saved before confirmation. Two HTTP requests may be
+in flight, sharing serialized durable reservations. Maximum128 calls,2048 output
+tokens/request,24000 request bytes,240-second launch window, and $1.28 reserved
+within the user's existing $5 task ceiling. Incomplete requests stop the pilot;
+unchanged completed runs reuse receipts, and partial intents do not auto-retry.
+The reviewed ruOS loader reads only HF_TOKEN inside the provider process. Secret
+values never enter prompts, files, command arguments, or receipts. Redirects are
+refused; strict JSON and token-accounting checks fail closed.
+
+Live attempt at source `442a23e458a4340339079e063f73cd13f75b9bc0`:
+**INCONCLUSIVE_PROVIDER_403**. The first baseline POST to HF's explicit
+`openai/gpt-oss-120b:groq` route returned403. No task was evaluated, no lane completed,
+and confirmation remained untouched. Independent read-only whoami/model-list
+requests both returned200; these establish account access, not inference access.
+Executor reported statusok,exitCode0,completionVersion1,completionVerifiedtrue.
+One $0.01 request reservation; known task reservations now total$0.03. Billed cost
+and failed-request token usage are unknown. No token rotation or paid retry.
+
+`evidence/agent-hf-pilot-20261012.json` preserves the sanitized result and host
+receipt hashes. Full request/receipts remain in the private ruOS evidence path.
+Eight new focused tests pass (four independent task-verifier checks and four
+provider/candidate boundary tests). The original runner reported zero recorded
+usage; the evidence explicitly corrects this to unknown cost, not free inference.
+Subsequent runner reporting includes completed-task counts and null cost estimates
+when usage is missing. No learning, RSI, promotion, or Arena result is claimed.
