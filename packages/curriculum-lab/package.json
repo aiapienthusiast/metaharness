@@ -23,11 +23,12 @@
   "scripts": {
     "test": "node --test test/*.test.mjs && python3 -m unittest discover -s test -p \"test_*.py\"",
     "smoke": "python3 examples/local_learning.py",
-    "learning:test": "python3 examples/learning_checks.py && python3 examples/optimizer_checks.py && python3 examples/policy_checks.py",
+    "learning:test": "python3 examples/learning_checks.py && python3 examples/optimizer_checks.py && python3 examples/policy_checks.py && python3 examples/prior_checks.py",
     "learning:search": "node --experimental-transform-types examples/learning_search.mjs",
     "lint": "node --check src/index.mjs && node --check src/providers.mjs && node --check src/cli.mjs",
     "learning:compare": "node --experimental-transform-types examples/optimizer_comparison.mjs",
-    "learning:policy": "node --experimental-transform-types examples/policy_search.mjs"
+    "learning:policy": "node --experimental-transform-types examples/policy_search.mjs",
+    "learning:prior": "python3 examples/learned_prior.py"
   },
   "engines": {
     "node": ">=20"

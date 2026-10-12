@@ -206,3 +206,42 @@ or LLM training. Both new families use the same synthetic generator, which limit
 transfer claims. The next meaningful direction is a learned search prior trained
 across task families, evaluated on genuinely unseen families against the same
 strong controls; these exposed results cannot serve as fresh confirmation again.
+
+### Learned search prior: resource ablation (2026-10-12 UTC)
+
+```sh
+npm run learning:prior --prefix packages/curriculum-lab -- /absolute/prior-evidence /absolute/optimizer-comparison-v1 /absolute/policy-search-v1
+python3 packages/curriculum-lab/examples/prior_checks.py /absolute/prior-evidence
+```
+
+The two history directories are the extracted earlier evidence archives. Only
+**discovery** observations enter the prior. An ExtraTrees regression model learns
+relative learning-rate performance from 656 historical observations across 40
+task instances (five families, eight instances each), using training-partition
+statistics and log learning rate. It ranks seven fixed rates and proposes two
+for validation on each new task. Frozen confirmation covers noisy moons with
+nuisance features and anisotropic blobs, eight new populations each. Controls
+are full seven-rate grid/random searches and equal-budget fixed/random pairs.
+The trained forest is retained as JSON, independently replayable without pickle.
+
+**HOLD_NO_CONFIRMED_PRIOR_GAIN.** The learned arm uses eight training fits per
+task including confirmation versus 18 for full search, a nominal 55.56% reduction.
+That is an allocation difference, not an accepted efficiency gain: confirmation
+loses 0.1487 percentage points to grid, 0.2702 to full random, and 0.2983 to the
+random pair. Its 0.1042-point improvement over the fixed pair is insufficient.
+Both the frozen noninferiority and attribution gates fail. Retain the prior as
+experimental evidence; do not install it as the default search strategy.
+
+All 680 fits, 163,200 predictions, 43,520 trace steps, and 112 prior predictions
+are independently replay checked. Exact rerun executes zero new fits. The nine
+scientific tests pass alongside the previously verified 25 unchanged core/host
+tests. No provider requests or new inference charges. Historical learning work
+and infrastructure billing are not included in a claimed net cost saving; no
+such saving is established.
+
+Full evidence: `evidence/prior-summary-20261012.json` and its adjacent tar archive.
+This is actual regression-model fitting and cross-family testing inside the
+experimental package, not a Darwin-engine run, LLM weight training, or RSI.
+Further rounds should justify a materially different workload or model before
+spending more effort on this low-dimensional learning-rate search. Preserve all
+failed priors and exposed holdouts; do not weaken acceptance thresholds.
