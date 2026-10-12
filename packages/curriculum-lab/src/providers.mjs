@@ -41,7 +41,7 @@ async function request(fetchImpl, url, token, method, body, timeoutMs) {
       ...(body ? {body:JSON.stringify(body)} : {}),signal:AbortSignal.timeout(timeoutMs)});
   } catch { throw new Error('provider_transport_uncertain'); }
   // Never include provider bodies or raw exceptions in logs/errors.
-  ensure(response.ok,'provider_http_failure');
+  ensure(response.ok,Number.isInteger(response.status) && response.status>=100 && response.status<=599 ? `provider_http_${response.status}` : 'provider_http_failure');
   const raw=await response.text(); ensure(raw.length<=262144,'provider_response_oversized');
   try { return JSON.parse(raw); } catch { throw new Error('provider_invalid_json'); }
 }
@@ -51,7 +51,7 @@ export async function proposeHF({spec:input,directory,authorization,token,model=
   ensure(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+$/.test(model),'explicit_provider_required');
   ensure(authorization.model===model,'model_not_authorized');
   const body={model,temperature:0,reasoning_effort:'low',max_tokens:2048,response_format:{type:'json_object'},messages:[
-    {role:'system',content:'Propose exactly one numeric curriculum parameter step. Output only {"parameter":string,"value":number}. Never output code.'},
+    {role:'system',content:'Propose exactly one numeric curriculum parameter step. Respond only with valid JSON using {"parameter":string,"value":number}. Never output code.'},
     {role:'user',content:JSON.stringify({knob:s.knob,incumbent:s.incumbent,trainingFamilies:s.trainingFamilies})}
   ]};
   // Conservative UTF-8 byte upper reservation plus output limit. No sealed inputs in prompt.

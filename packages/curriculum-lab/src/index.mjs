@@ -126,7 +126,7 @@ export async function once(directory, identity, operation) {
     await writeExclusive(join(directory,`${key}.intent.json`),{key,identity,createdAt:new Date().toISOString()});
     let receipt;
     try { receipt=await operation(); }
-    catch { receipt={status:'INCONCLUSIVE',reason:'operation_failed_or_uncertain',retry:false}; }
+    catch(e) { receipt={status:'INCONCLUSIVE',reason:/^provider_http_[1-5][0-9]{2}$/.test(e?.message) ? e.message : 'operation_failed_or_uncertain',retry:false}; }
     await writeExclusive(receiptPath,{key,receipt,receiptHash:digest(receipt)});
     return {...receipt,reused:false};
   } finally { await lock.close(); await unlink(lockPath); }

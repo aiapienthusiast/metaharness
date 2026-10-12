@@ -14,6 +14,7 @@ test('full local evaluation follows a validated proposal and repeat spends no ca
     assert(!options.body.includes('10007'));
     assert(!options.body.includes('confirmation'));
     assert.equal(body.model,'openai/gpt-oss-120b:groq');
+    assert.match(body.messages[0].content,/JSON/);
     return {ok:true,text:async()=>JSON.stringify({usage:{prompt_tokens:100,completion_tokens:20,total_tokens:120},
       choices:[{finish_reason:'stop',message:{content:'{"parameter":"cost_width","value":3}'}}]})};
   };
@@ -27,4 +28,16 @@ test('full local evaluation follows a validated proposal and repeat spends no ca
   assert.equal(calls,1);
   assert.equal(second.promote,false);
   assert(!(await readFile(join(directory,'frozen.json'),'utf8')).includes('fixture-only'));
+});
+
+test('HTTP status is retained without retaining response text',async()=>{
+  const directory=await mkdtemp(join(tmpdir(),'hf-e2e-error-'));
+  let calls=0;
+  const r=await run(directory,{token:'fixture-only',fetchImpl:async()=>{
+    calls++; return {ok:false,status:400,text:async()=>{throw Error('must_not_read_body');}};
+  }});
+  assert.equal(calls,1);
+  assert.equal(r.proposal.reason,'provider_http_400');
+  assert.equal(r.evaluation,null);
+  assert.equal(r.receiptReuseVerified,true);
 });
