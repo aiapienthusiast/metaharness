@@ -68,3 +68,22 @@ References checked 2026-10-11:
 * https://arxiv.org/abs/2607.22529 (Skill Self-Play)
 * https://docs.vast.ai/api-reference/instances/execute
 * https://huggingface.co/docs/inference-providers/tasks/chat-completion
+# Live HF integration check
+
+After explicit spending authorization, the reviewed ruOS host can run
+`python3 examples/hf_e2e.py /absolute/private/evidence-directory`.
+Pin and verify all source files first. This loads only HF_TOKEN from the protected
+binding into the provider process; the evaluator gets only PATH. It freezes the
+source/settings before one structured Groq proposal, trains paired synthetic CPU
+policies, retains all 12,000 evaluation decisions, and checks receipt reuse.
+Repeated identical execution makes zero extra provider calls. A changed source
+must use a separately authorized experiment, not reset an existing receipt.
+
+The example reserves $0.01 for one call, caps output at 2,048 tokens and retains
+unknown billed cost explicitly. This is a local two-parameter learner driven by
+an HF proposal, not HF model-weight training, an Arena evaluation, or an RSI claim.
+The remote proposer revision and effective thinking configuration are unknown.
+No promotion is possible. Do not mistake its width shift for distinct-domain
+transfer. The $5 user ceiling in this particular example records the experiment's
+authorization; it grants no permission to other users or subsequent experiments.
+
