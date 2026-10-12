@@ -129,3 +129,44 @@ No promotion is possible. Do not mistake its width shift for distinct-domain
 transfer. The $5 user ceiling in this particular example records the experiment's
 authorization; it grants no permission to other users or subsequent experiments.
 
+
+### Equal-budget optimizer comparison (2026-10-12)
+
+Run from this repository with Node 24 and the pinned scientific dependencies:
+
+```sh
+npm run learning:compare --prefix packages/curriculum-lab -- /absolute/evidence/directory
+python3 packages/curriculum-lab/examples/optimizer_checks.py /absolute/evidence/directory
+```
+
+The actual Darwin `evolveNumeric` engine now has a random-search comparator. Before
+outcomes, the runner freezes eight fresh partition seeds, three public datasets
+(digits, wine, breast cancer), independent discovery/confirmation fit seeds, and
+one learning-rate search space. Both methods start at the stronger fixed rate
+0.4. Random search receives exactly Darwin's realized number of unique discovery
+evaluations, including that anchor, using a precomputed independent log-uniform
+pool. Shared exact evaluations reuse receipts. Both use 64 gradient updates per
+fit; confirmation evaluates only the selected winners and the anchor. This is
+an equal training-work comparison, not an equal wall-time claim.
+
+Result: **HOLD_NO_CONFIRMED_SEARCH_ADVANTAGE**. Darwin's mean confirmation gain
+versus random was 0.0669 percentage points, with descriptive 95% lower bound
+-0.1604 points. Against fixed rate 0.4, the gain was 0.0413 points, with lower
+bound -0.2187 points and a small breast-cancer regression. Both fail the frozen
+0.5-point, positive-lower-bound, no-family-regression gate. No promotion occurred.
+
+All 138 unique evaluations, 948 real softmax fits, 160,924 predictions and 60,672
+training trace steps were retained and independently replay-checked. Repeating
+the command reused all evidence with zero new fits. Thirty focused tests pass
+(20 Node, five host Python, five scientific checks). This cycle used no provider
+calls and $0 external inference spend; existing infrastructure cost is unknown.
+
+`evidence/optimizer-summary-20261012.json` records the result and archive digest;
+`evidence/optimizer-evidence-20261012.tar.gz` contains the frozen plan, complete
+traces/checkpoints, actual Darwin archives, immutable receipts and cached replay.
+Repeated partitions overlap and are not independent population samples. The
+previous small-model tuning gain remains a limited result; this comparison does
+not establish an adaptive-search advantage, transfer learning, or recursive
+self-improvement. Further work should test a changed optimizer policy on training
+workloads before opening newly frozen, genuinely distinct confirmation workloads.
+These exposed confirmation partitions must not become fresh holdouts again.
