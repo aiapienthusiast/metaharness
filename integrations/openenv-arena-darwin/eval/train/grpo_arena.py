@@ -49,6 +49,9 @@ ap.add_argument("--eval-instances", type=int, default=16, help="instances per ce
 ap.add_argument("--eval-repeats", type=int, default=1, help="samples per instance")
 ap.add_argument("--eval-decoding", choices=["sample", "greedy"], default="sample")
 ap.add_argument("--eval-tag", default="eval", help="output folder name for --eval-only")
+ap.add_argument("--eval-knobs", nargs="*", default=[], help="extra eval cells with one generator knob set, as family:key=value (for example science_calibration:sample_count_delta=-2)")
+ap.add_argument("--eval-only-knobs", action="store_true", help="evaluate only the --eval-knobs cells, not the default-knob cells")
+ap.add_argument("--train-knobs", nargs="*", default=[], help="train on one generator knob for a family, as family:key=value; that family is then always sampled with the knob set")
 args = ap.parse_args()
 
 sys.path.insert(0, args.env_dir)
@@ -132,6 +135,16 @@ def _generate_chunk(model, seqs):
     return res
 
 
+def parse_knob(s):
+    fam, kv = s.split(":", 1)
+    key, val = kv.split("=", 1)
+    return fam, key, int(val)
+
+
+def knob_label(key, val):
+    return f"{key}_{'m' if val < 0 else 'p'}{abs(val)}"
+
+
 def run_episodes(model, specs):
     """Play one episode per spec with `model` (training and evaluation share this path).
     -> (prompt_ids, completion_ids, logprobs, env_mask, per-episode state, per-episode chat messages)."""
@@ -140,7 +153,7 @@ def run_episodes(model, specs):
     state = []  # per episode: dict(done, reward, failure, turns, invalid)
     for sp in specs:
         env = ArenaEnvironment()
-        reset = env.reset(task_id=format_task_id(sp["family"], sp["difficulty"]), seed=sp["seed"])
+        reset = env.reset(task_id=format_task_id(sp["family"], sp["difficulty"], sp.get("params")), seed=sp["seed"])
         first = reset.model_dump_json()
         m = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": first}]
         envs.append(env); msgs.append(m)
@@ -219,9 +232,13 @@ def reward_fn(prompts, completions, episode_reward=None, **kwargs):
 
 def make_dataset(n_rows):
     rows = []
+    train_knobs = {f: {k: v} for f, k, v in map(parse_knob, args.train_knobs)}
     for _ in range(n_rows):
-        rows.append(json.dumps({"family": random.choice(args.families), "difficulty": random.choice(args.difficulties),
-                                "seed": random.randrange(TRAIN_LO, TRAIN_HI)}))
+        fam = random.choice(args.families)
+        row = {"family": fam, "difficulty": random.choice(args.difficulties), "seed": random.randrange(TRAIN_LO, TRAIN_HI)}
+        if fam in train_knobs:
+            row["params"] = train_knobs[fam]
+        rows.append(json.dumps(row))
     for r in rows:
         assert TRAIN_LO <= json.loads(r)["seed"] < TRAIN_HI
     return Dataset.from_dict({"prompt": rows})
@@ -239,11 +256,14 @@ def evaluate(model, tag):
     model.eval()
     DECODE["greedy"] = args.eval_decoding == "greedy"
     summary, t0 = {}, time.time()
-    for fam in (args.eval_families or args.families):
+    cells = [] if args.eval_only_knobs else [(fam, None, f"{fam}_d{{d}}") for fam in (args.eval_families or args.families)]
+    for fam, key, val in map(parse_knob, args.eval_knobs):
+        cells.append((fam, {key: val}, f"{fam}__{knob_label(key, val)}_d{{d}}"))
+    for fam, params, cell_fmt in cells:
         for d in (args.eval_difficulties or args.difficulties):
-            specs = [{"family": fam, "difficulty": d, "seed": lo + k} for k in range(args.eval_instances)]
+            specs = [{"family": fam, "difficulty": d, "seed": lo + k, **({"params": params} if params else {})} for k in range(args.eval_instances)]
             assert all(lo <= s["seed"] < hi for s in specs)
-            cell = f"{fam}_d{d}"
+            cell = cell_fmt.format(d=d)
             for rep in range(args.eval_repeats):
                 *_, state, msgs = run_episodes(model, specs)
                 with open(os.path.join(outdir, f"{cell}_s{lo}{f'_r{rep}' if rep else ''}.jsonl"), "w") as f:
