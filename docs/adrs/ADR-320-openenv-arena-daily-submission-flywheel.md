@@ -134,6 +134,17 @@ Measured exactly as pre-registered in decision 29: confirm split, 24 instances p
 
 Reading: the decision 28 gain (seed 0, 7.3% to 30.2%) reproduces on a new training seed and on tasks never used before (4.2% to 25.0%), so two seeds now agree in direction and rough size. Still the same recipe, the same two families, our generators and strict scoring; not an arena score, and run B (difficulty 3) is judged separately.
 
+### Decision 31: learn27b-5b result (difficulty 3 added to the training mix) and the decision (2026-10-12)
+
+Measured as pre-registered in decision 29: same seed (1) and steps as run A, difficulty 3 added to the training mix, untouched confirm split, 24 instances per cell, strict scoring, paired by seed; the in-process base arms of runs A and B were checked and are identical on all 24 files. GPU torn down and confirmed (3.88 h, about 4 USD; run A 3.35 h, about 3.5 USD; ledger total about 29 USD at the start of run B, so roughly 33 USD of the 100 USD GPU pool).
+
+- H6 (B minus A, office_reconciliation + software_change at d3, 48 episodes): full-solve rate 18.8% (A) vs 10.4% (B), dSolved -0.083 [-0.188, 0.000]; dReward -0.010 [-0.078, +0.052]. Fails (required lower bound above 0).
+- H7 (B minus A, same families at d1 and d2, 96 episodes): 25.0% (A) vs 22.9% (B), dSolved -0.021 [-0.125, +0.094]; lower bound below the -0.10 margin. Fails.
+- G1 (B, security_triage d1 and d2): dReward vs base +0.083 [+0.021, +0.153]. Holds. G2 (B truncation, other six d1 and d2): 0 of 288. Holds. Other six, B vs base: dReward +0.038 [+0.014, +0.064], dSolved +0.003 [-0.010, +0.017].
+- Not a pre-registered criterion, but informative: run A, trained only on d1 and d2, already gains at d3 on these two families: 0.0% to 18.8%, dSolved +0.188 [+0.083, +0.313]. Run B, which trained on d3, gains +0.104 [+0.021, +0.208]. Within one seed each, adding d3 to the mix did not help d3 and slightly hurt it.
+
+Decision (per d29): run B does not supersede the decision 28/30 recipe. The retained recipe is the one of runs 4 and 5a: binary reward, office_reconciliation + software_change, difficulties 1 and 2. The difficulty-3 lever is closed for this recipe at one seed. Replication status: two seeds (0 and 1) agree on the main effect (7.3% to 30.2%, 4.2% to 25.0%); nothing here is an arena score.
+
 ## Evidence
 
 Commits `5923040a`, `f4c0e42b`, `6637b2fa`, `978ab069` (flywheel, 330 tests: 328 pass, 2 opt-in skipped; mutation-checked; two adversarial reviews plus a local codex review). Cross-run analysis from the public leaderboard and Trackio, 2026-10-09. Second run `fd70ac7bb85a1e8469f38039` (board post #99, 2026-10-10): 4/40, account 6/40 by best-per-domain; Trackio summary of 265 updates. `ruvector` 0.1.1 (a separate lane) shipped the same day; unrelated to this ADR. SOTA notes (abstract-level, not full-paper reads): few-environment RL overfits (Agent World Model), RL lifts pass@1 only where the base model sometimes succeeds (Yue et al., arXiv 2504.13837).
