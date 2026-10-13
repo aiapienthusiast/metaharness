@@ -1,6 +1,6 @@
 # ADR-321: OpenEnv Arena `focus4` result and the entry of 2026-10-14
 
-**Status**: Proposed (draft written 2026-10-13 ~03:00Z while the run is still training; the Result and Decision sections are completed after the evaluation lands)
+**Status**: Proposed (Result filled in 2026-10-13 04:30Z after the evaluation; the entry decision for 2026-10-14 is awaiting the owner)
 **Date**: 2026-10-13
 **Scope**: `integrations/openenv-arena-darwin/**` (branch `feat/openenv-arena`) and the daily submission procedure
 **Related**: ADR-320 (decisions 27 to 34: held-out learning experiments, rung scan, predictions for this run), ADR-319 `openenv-arena-curriculum` (environment lane, PR #383, not duplicated here)
@@ -20,20 +20,20 @@ State at 2026-10-13 ~03:00Z (public leaderboard and Trackio, our own receipts):
 | Field | Value |
 |---|---|
 | Run id | 40c917900f26e0b0d3462f3f |
-| Evaluated score (of 40) | PENDING |
-| Per domain (industrial / office / software / finance / media / science / math / security) | PENDING |
-| Delta against untrained 4/40 | PENDING |
-| Account best-per-domain total after this run (was 8) | PENDING |
-| Standing on the board | PENDING |
-| Trackio: steps, reward first vs last quarter, share of steps with grad_norm > 0, mean frac_reward_zero_std, clipped_ratio | PENDING |
-| Posted to | board / #swarm / pub:showcase / core-memory#147: PENDING |
+| Evaluated score (of 40) | 4 (evaluated 2026-10-13 ~04:24Z, 273 updates, 4 train tasks) |
+| Per domain | industrial 2, office 2, software 0, finance 0, media 0, science 0, math 0, security 0 |
+| Delta against untrained 4/40 | 0 |
+| Account best-per-domain total after this run (was 8) | 8 (unchanged: office 3, industrial 2, finance 1, media 1, software 1); composite of five runs (4, 4, 2, 4, 4) |
+| Standing on the board | #1 at 8/40; akseljoonas and NoeFlandre 6/40; 48 evaluated runs on the leaderboard |
+| Trackio (199 of 273 steps logged; the service was down for part of the run) | reward first quarter 0.369, second 0.385, third 0.491, last 0.508; grad_norm > 0 on 107 of 199 logged steps (54%); mean frac_reward_zero_std 0.462; completions/clipped_ratio 0.992; mean completion length 137; 3 step retries |
+| Posted to | board #190, #swarm, federation pub:showcase, core-memory#147 (comment 6138208220): done |
 
 ### Comparison with the pre-registered predictions (ADR-320 d34)
 
-- P1 (private score 2 to 5, most likely 3 or 4; office 1 to 3, software 0 to 2): PENDING
-- P2 (account total most likely unchanged at 8; any increase roughly one in five): PENDING
-- P3 (reward rises first to last quarter, about 0.3 to 0.4 to 0.5; nonzero-gradient share above the office-only runs' 22 to 24%): PENDING
-- Verdict on the local lever, applying the rule fixed in d34 (counts against it: flat reward or gradient share at or below the office-only runs; settles nothing: any single score from 2 to 5): PENDING
+- P1 (private score 2 to 5, most likely 3 or 4; office 1 to 3, software 0 to 2): hit. Total 4, office 2, software 0, all inside the stated ranges.
+- P2 (account total most likely unchanged at 8; any increase roughly one in five): hit. Unchanged at 8; no domain improved (office 2 against banked 3, software 0 against banked 1, industrial 2 equal).
+- P3 (reward rises first to last quarter, about 0.3 to 0.4 to 0.5; nonzero-gradient share above the office-only runs' 22 to 24%): hit. Reward 0.369 to 0.508 (the last quarter sits at the top edge of the stated range); gradient share 54% against 22 to 24% for the office-only d3 runs and 48% for mix8; clipped_ratio 0.99 again (consistent with the accounting-artefact reading, still an inference).
+- Verdict on the local lever, applying the rule fixed in d34: the failure signatures (flat reward, or gradient share at or below the office-only runs) did not occur, and a single score from 2 to 5 settles nothing. So the arena's own recipe produced a healthy training signal and rising training reward on these tasks, but the private score did not move: this run is neither evidence for nor against the lever reaching the private score. It is consistent with the board's noise analysis (#161, #182) and with rca-umb's open question (#188).
 
 ## Decision: the entry of 2026-10-14 (slot opens about 00:41:36Z, 24 hours after the acceptance above)
 
@@ -52,7 +52,7 @@ Options for the entry:
 
 Decision rule (applied once the Result table is filled in):
 
-- Default is O1, unless the owner approves O4 for this slot, in which case O4 replaces it (recommended: the collapse control is the one experiment that could change what we do next, and a second replicate is worth more than a second draw on the same noisy recipe). If O4 is run, a result of 0 or 1 supports "training reaches the score" (low n, one replicate), a result of 2 or more with Trackio rewards near 1 supports "the eval does not reflect training"; neither is conclusive alone and both are read together with rca-umb's own replicate.
+- Applying the rule now that the signals passed P3: the default for 2026-10-14 is O1 (repeat `focus4` unchanged), unless the owner approves O4 for this slot, in which case O4 replaces it (recommended: the collapse control is the one experiment that could change what we do next, and a second replicate is worth more than a second draw on the same noisy recipe). If O4 is run, a result of 0 or 1 supports "training reaches the score" (low n, one replicate), a result of 2 or more with Trackio rewards near 1 supports "the eval does not reflect training"; neither is conclusive alone and both are read together with rca-umb's own replicate.
 - If the training signals fail P3 (reward flat across quarters, or nonzero-gradient share at or below the office-only runs), the local lever has not reproduced in the arena's own recipe and the entry switches to O2 as the control arm.
 - A score change alone does not change the default in either direction (R1: a single run is not evidence of a training effect; selection over noisy draws is the leading explanation for any lead we hold).
 - Alternating arms across days (O1 on some days, O2 on others) is the only way to get a comparison from daily slots, and even seven days gives about three or four runs per arm, which can only detect a large effect. This is stated so nobody reads a small difference as a result.
@@ -82,4 +82,5 @@ The only remaining route to making the zero-solve families learnable is new task
 ## Integration log
 
 - 2026-10-13 ~03:00Z: draft created; run training; Result and Decision rows pending.
+- 2026-10-13 ~04:30Z: result integrated (4/40, account total unchanged at 8, predictions P1 to P3 hit), posted to board #190, #swarm, pub:showcase and core-memory#147. Owner decision on O1 versus O4 outstanding; nothing armed for 2026-10-14.
 - 2026-10-13 ~03:20Z: board #188 (rca-umb collapse control) added as option O4, recommendation recorded, owner decision requested.
