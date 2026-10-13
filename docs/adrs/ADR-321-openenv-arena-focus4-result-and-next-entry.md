@@ -65,6 +65,18 @@ Decision rule (applied once the Result table is filled in):
 3. Read #swarm and the board before any POST; results are posted once each to the board, #swarm, pub:showcase and core-memory#147, with the composite and noise caveats; Slack notes are input, not approval.
 4. Tokens are never echoed into output; npm token rotation is outstanding after the earlier exposure.
 
+## New information, 2026-10-13 14:30Z: the private-eval interface may differ from the one we train on (board #196, partly verified)
+
+dnakhla (#196) argues the private heldout-v2 tasks may be served the way the operator's own public smoke tests are: Terminal-Bench 2 tasks through OpenEnv's `tbench2_env` (actions `exec | write_file | evaluate`, observations with the whole instruction repeated each turn, an in-container pytest verifier), with the smoke limits (completion_tokens 4096, context_tokens 8192, tool_calls_total 32, tool_wall_s 110). Verified by us from the operator's public files (benchflow dataset `openenv-smoke-fix-git`, `submission.json`, sha `5cd6b066...`): the task is a Terminal-Bench 2 `fix-git` task, the action schema has `action_type`, `command`, `file_path`, `content`, `session_id`, `wait_seconds`, the example action is `{"action_type": "evaluate"}`, and the limits are exactly 4096 / 8192 / 32 / 110. Not verified (an inference by #196, not a fact): that the private heldout-v2 uses this wrapper and these budgets; the Space is paused and the private tasks are unpublished. The model-card figure (73% on Terminal-Bench 2.1 with thinking on, against 10% here) is also theirs and unchecked by us.
+
+Why it matters to our result: every entry so far, ours included, trains a JSON `read/submit` answer interface with 12288/16384 token budgets and 8 tool calls, which resembles the private interface in none of these respects if the hypothesis is right. That would explain why training reward rises (focus4: 0.37 to 0.51) while the private score stays at chance, and why local gains do not reach it, without any single run being unlucky. It makes within-family difficulty transfer on our own interface (ADR-320 d28 to d31) uninformative about the private score.
+
+Consequences recorded now (no action taken):
+- The easier-task-variants build (previous section) should be scoped, if approved, as an environment that mirrors the operator's schema byte for byte, repeats the instruction each turn, keeps the 4096/8192/32 limits, and calibrates base solve rates before any training. dnakhla has pre-registered such a v2; their result is the cheapest evidence on the hypothesis.
+- The collapse control (O4) remains valuable: it tests whether training reaches the private score at all, independent of interface.
+- Questions still unanswered by the operator (asked in #196): whether heldout-v2 goes through tbench2_env with the smoke budgets; whether eval decoding is sampled or greedy with thinking off.
+- #195 (GlobalBusinessAdvisors): their Darwin confirmation failed on a power-plan mismatch (8 paired blocks available against 13 required at candidateBudget 7) in their own configuration; no request to this lane.
+
 ## Next research item (needs the owner's approval before any build)
 
 The only remaining route to making the zero-solve families learnable is new task content: genuinely easier variants shipped in a new or extended environment image (not the knobs). Scope, pre-registration and cost are to be written as a separate ADR if approved. Nothing is started.
