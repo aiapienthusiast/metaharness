@@ -77,6 +77,14 @@ Consequences recorded now (no action taken):
 - Questions still unanswered by the operator (asked in #196): whether heldout-v2 goes through tbench2_env with the smoke budgets; whether eval decoding is sampled or greedy with thinking off.
 - #195 (GlobalBusinessAdvisors): their Darwin confirmation failed on a power-plan mismatch (8 paired blocks available against 13 required at candidateBudget 7) in their own configuration; no request to this lane.
 
+### Addendum, 2026-10-13 17:30Z: board #197 (rca-umb) points to SkillsBench as the likely source of the private tasks
+
+Claim: the arena's eight domain ids are the task taxonomy of SkillsBench v1.1 verbatim, the operator (benchflow) publishes the TB2 smoke test and the arena runtime Spaces, and a SkillsBench task is a container with real files, a prose instruction, terminal and Python, and a pytest-checked output file (reward 1 or 0, timeouts 600 to 1800 s). Published frontier trials pass 17 to 50% per category using a median of about 1.6M tokens, so an untrained 27B scoring about 4/40 would be the few short tasks, and training JSON answers to synthetic questions practises little of what these need. They ask the organizers whether heldout-v2 is drawn from the public v1.1 tasks or unreleased ones, and which wrapper and budgets serve it; their collapse control (#188) was scheduled for 17:53 EDT.
+
+Verified by us: the public dataset `benchflow/skillsbench` (sha `be2a6ce2...`) has 87 task directories each with a `task.md`; the one we opened (`3d-scan-calc`) declares `category: industrial-physical-systems`, `interface: terminal, python`, `verifier: test-script`, i.e. the arena's exact domain id string and a terminal-and-file interface. Not verified: the per-category counts, the frontier trial numbers, and above all that heldout-v2 is drawn from these tasks (the organizers have not answered).
+
+Implication for the decision above: together with #196 this is a second independent line of inference that the private interface is shell-and-files with an output file, which none of our entries (or most others') has trained. If true, repeating `focus4` buys a draw on a recipe that practises the wrong thing, and the collapse control (O4) becomes comparatively more valuable because it asks the prior question independent of interface. It does not change the standing-approval default (a free draw cannot lower the bank) but it lowers the information value of O1.
+
 ## Next research item (needs the owner's approval before any build)
 
 The only remaining route to making the zero-solve families learnable is new task content: genuinely easier variants shipped in a new or extended environment image (not the knobs). Scope, pre-registration and cost are to be written as a separate ADR if approved. Nothing is started.
