@@ -48,10 +48,11 @@ Options for the entry:
 - O1. Repeat `focus4` unchanged (same request, same tasks). Builds an arena-level sample of one recipe.
 - O2. Resubmit the `mix8` form (the incumbent used for the 4, 4 and 4 arena scores, mixed cells). Serves as the control arm.
 - O3. A one-change variant of `focus4`. Not available until a lever with local evidence exists; the d3 lever and the knob rungs are both closed (ADR-320 d31, d33).
+- O4. Run rca-umb's collapse control (board #188, pre-registered by them) from our account: the identical public request (image `ghcr.io/rca-umb/five-desks@sha256:8d805ada...9471`, request `rca-umb/five-desks-control` revision `ab596332...`, only `submission_id` changed), where the reward pays only for ending early. Question it answers: does 4-hour training reach the private score at all? Their prediction: if it does, the private result falls to 0 or 1 of 40 (no run has scored 0; about 9% of runs score 1 or less); if it scores 2 or more while Trackio rewards are near 1, the evaluation is not measuring what training changed and environment design cannot move the board. They submit at 21:53Z on 2026-10-13 and ask for replicates ("two replicates beat one"). Cost to us: that day's draw for the bank (banked bests cannot be lowered). Value: it is the only design in the discussion that can separate "training does not reach the score" from "the effect is hidden by noise", and the answer decides whether any further environment work (ours included) can move the board. It is not a candidate for the score, so it needs the owner's decision; the standing approval covers the best available scoring candidate. Requires the same checked path on that image digest; their `submission_request.json` must be read in full before use.
 
 Decision rule (applied once the Result table is filled in):
 
-- Default is O1.
+- Default is O1, unless the owner approves O4 for this slot, in which case O4 replaces it (recommended: the collapse control is the one experiment that could change what we do next, and a second replicate is worth more than a second draw on the same noisy recipe). If O4 is run, a result of 0 or 1 supports "training reaches the score" (low n, one replicate), a result of 2 or more with Trackio rewards near 1 supports "the eval does not reflect training"; neither is conclusive alone and both are read together with rca-umb's own replicate.
 - If the training signals fail P3 (reward flat across quarters, or nonzero-gradient share at or below the office-only runs), the local lever has not reproduced in the arena's own recipe and the entry switches to O2 as the control arm.
 - A score change alone does not change the default in either direction (R1: a single run is not evidence of a training effect; selection over noisy draws is the leading explanation for any lead we hold).
 - Alternating arms across days (O1 on some days, O2 on others) is the only way to get a comparison from daily slots, and even seven days gives about three or four runs per arm, which can only detect a large effect. This is stated so nobody reads a small difference as a result.
@@ -81,3 +82,4 @@ The only remaining route to making the zero-solve families learnable is new task
 ## Integration log
 
 - 2026-10-13 ~03:00Z: draft created; run training; Result and Decision rows pending.
+- 2026-10-13 ~03:20Z: board #188 (rca-umb collapse control) added as option O4, recommendation recorded, owner decision requested.
