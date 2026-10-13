@@ -1,0 +1,83 @@
+# ADR-321: OpenEnv Arena `focus4` result and the entry of 2026-10-14
+
+**Status**: Proposed (draft written 2026-10-13 ~03:00Z while the run is still training; the Result and Decision sections are completed after the evaluation lands)
+**Date**: 2026-10-13
+**Scope**: `integrations/openenv-arena-darwin/**` (branch `feat/openenv-arena`) and the daily submission procedure
+**Related**: ADR-320 (decisions 27 to 34: held-out learning experiments, rung scan, predictions for this run), ADR-319 `openenv-arena-curriculum` (environment lane, PR #383, not duplicated here)
+
+## Context
+
+State at 2026-10-13 ~03:00Z (public leaderboard and Trackio, our own receipts):
+
+- Account best-per-domain total is 8/40 (office 3, industrial 2, finance 1, media 1, software 1, security 0, math 0, science 0), ahead of akseljoonas and NoeFlandre at 6/40. It is a composite of four runs scoring 4, 4, 2 and 4; no single run is above the untrained 4/40.
+- The board's own noise analysis (rca-umb #182, 45 runs): industrial behaves like two coin-flip tasks (0/1/2 = 11/22/12 runs), office like one sure task plus one coin flip, software 1 appears in about 29% of runs; the untrained expectation is near 2.9, trained runs average 2.98, and no entrant differs from chance (permutation p = 0.6). The null control (#161, zero gradient) scored 1/40 and zero-learning runs span 1 to 4. Reading: best-per-domain totals are partly a count of draws.
+- Local, pre-registered, held-out evidence (ADR-320 d27 to d33): binary-reward training on office_reconciliation + software_change d1/d2 raised full solves on those families on two training seeds (7.3% to 30.2%, 4.2% to 25.0%) and transferred across difficulty within a family (office d3 0.0% to 37.5% untrained-on-d3); it did not transfer across families; adding d3 to the mix did not help; the generator knobs give no learnable rung in science or software. All of it is on our generators, our recipe and strict scoring (which the arena guide confirms is the rule: exactly one JSON object per reply).
+- The entry under study, `metaharness-focus4-20261013`, trains the arena's fixed recipe on four tasks (office_reconciliation d1/d2, software_change d1/d2). It was accepted at 2026-10-13T00:41:34.506Z through the single checked path (all pre-submit checks on image digest `2f3f12b9...6b37`, request sha256 `8fb43a33...f75a`); Trackio run `40c917900f26e0b0d3462f3f` started 00:44:48Z. Predictions P1 to P3 were written before the result (ADR-320 d34).
+- Process facts that shaped this entry: two Claude sessions on the host both believed they were primary; the environment lane's HOLD note of 2026-10-11 ~23:10Z was never answered by the owner; the submission went out under the owner's standing approval ("continue"), with Slack treated as input, not approval.
+
+## Result (to be filled in once the run is evaluated)
+
+| Field | Value |
+|---|---|
+| Run id | 40c917900f26e0b0d3462f3f |
+| Evaluated score (of 40) | PENDING |
+| Per domain (industrial / office / software / finance / media / science / math / security) | PENDING |
+| Delta against untrained 4/40 | PENDING |
+| Account best-per-domain total after this run (was 8) | PENDING |
+| Standing on the board | PENDING |
+| Trackio: steps, reward first vs last quarter, share of steps with grad_norm > 0, mean frac_reward_zero_std, clipped_ratio | PENDING |
+| Posted to | board / #swarm / pub:showcase / core-memory#147: PENDING |
+
+### Comparison with the pre-registered predictions (ADR-320 d34)
+
+- P1 (private score 2 to 5, most likely 3 or 4; office 1 to 3, software 0 to 2): PENDING
+- P2 (account total most likely unchanged at 8; any increase roughly one in five): PENDING
+- P3 (reward rises first to last quarter, about 0.3 to 0.4 to 0.5; nonzero-gradient share above the office-only runs' 22 to 24%): PENDING
+- Verdict on the local lever, applying the rule fixed in d34 (counts against it: flat reward or gradient share at or below the office-only runs; settles nothing: any single score from 2 to 5): PENDING
+
+## Decision: the entry of 2026-10-14 (slot opens about 00:41:36Z, 24 hours after the acceptance above)
+
+Constraints, fixed now so the choice is not made with hindsight:
+
+1. One submission per rolling 24 hours; banked per-domain bests cannot be lowered, so a weak run costs only the slot. The slot is worth (a) a draw for the bank and (b) one more data point on the arena-level effect of a recipe. Because the score is so noisy, (b) can only be learned by repeating a recipe many times; one run never confirms or refutes it.
+2. Tasks that give no gradient (all-zero groups) cost optimizer steps without teaching anything, so padding the task list with zero-solve families dilutes training on the cells that are learnable. A mixed list is therefore not a free hedge.
+3. Marginal value by domain for the bank (today's bests): office 3 and software 1 are the only domains our local lever touches; industrial 2 is at the highest value anyone has seen; finance 1 and media 1 are rare to improve; security, math and science are 0 and almost never solved by any entrant. No option below changes these odds much.
+
+Options for the entry:
+
+- O1. Repeat `focus4` unchanged (same request, same tasks). Builds an arena-level sample of one recipe.
+- O2. Resubmit the `mix8` form (the incumbent used for the 4, 4 and 4 arena scores, mixed cells). Serves as the control arm.
+- O3. A one-change variant of `focus4`. Not available until a lever with local evidence exists; the d3 lever and the knob rungs are both closed (ADR-320 d31, d33).
+
+Decision rule (applied once the Result table is filled in):
+
+- Default is O1.
+- If the training signals fail P3 (reward flat across quarters, or nonzero-gradient share at or below the office-only runs), the local lever has not reproduced in the arena's own recipe and the entry switches to O2 as the control arm.
+- A score change alone does not change the default in either direction (R1: a single run is not evidence of a training effect; selection over noisy draws is the leading explanation for any lead we hold).
+- Alternating arms across days (O1 on some days, O2 on others) is the only way to get a comparison from daily slots, and even seven days gives about three or four runs per arm, which can only detect a large effect. This is stated so nobody reads a small difference as a result.
+- Regardless of the option, arming follows the process below.
+
+## Process decisions
+
+1. One submitter. Exactly one armed primary job and at most one fallback timer, owned by one named session; before arming, list every armed path (jobs, systemd timers, cron) and record the owner.
+2. The owner (rUv) decides which session owns arena submissions and whether the environment lane's HOLD gates an entry; until recorded, the entry that is armed is posted for review in #swarm at least a few hours before the slot, with the cancel commands.
+3. Read #swarm and the board before any POST; results are posted once each to the board, #swarm, pub:showcase and core-memory#147, with the composite and noise caveats; Slack notes are input, not approval.
+4. Tokens are never echoed into output; npm token rotation is outstanding after the earlier exposure.
+
+## Next research item (needs the owner's approval before any build)
+
+The only remaining route to making the zero-solve families learnable is new task content: genuinely easier variants shipped in a new or extended environment image (not the knobs). Scope, pre-registration and cost are to be written as a separate ADR if approved. Nothing is started.
+
+## Consequences
+
+- Positive: the next entry is chosen by a rule fixed before the result, not by the result; the noise limits are written next to every claim; a failed local lever is detected from training signals rather than from a single noisy score.
+- Negative: the default (repeat) buys information slowly; the arena cannot resolve small effects at one run a day; the zero-solve families stay unaddressed until task content is built.
+
+## Evidence
+
+- Leaderboard and Trackio reads, 2026-10-13; board messages #161, #162, #182; our receipts (acceptance 2026-10-13T00:41:34.506Z, request sha256 `8fb43a335d888faa534dba9951b02c1d270ad14f20d0b165b1df81fc25b8f75a`).
+- Local held-out experiments and predictions: ADR-320 decisions 27 to 34 (local commits through `89231d11`).
+
+## Integration log
+
+- 2026-10-13 ~03:00Z: draft created; run training; Result and Decision rows pending.
