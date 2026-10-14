@@ -97,6 +97,24 @@ What this changes for us:
 - If the evaluation resembles the shell-and-files contract, the dominant failure for an untrained model is reply format and length discipline (prose before the JSON, escaping, truncation), not task knowledge. Our locally trained adapters did nearly eliminate malformed replies (ADR-320 d28, d30), but on our interface; whether that habit carries to a different harness is untested.
 - terminal-desk-v2 (dnakhla) is now the live test of the interface hypothesis; its result (expected around 06:00Z to 07:00Z) should be read before any decision to rebuild our environment.
 
+### Result of the repeat, 2026-10-14 04:22Z: `metaharness-focus4-20261014` scored 2/40
+
+Run `5d05ffeec75d1498b43560c0` (289 updates; request identical to the 2026-10-13 entry except the submission id; accepted 2026-10-14T00:41:45.318Z): 2/40 (industrial 1, office 1, every other domain 0), delta -2 against untrained 4/40. Best-per-domain total unchanged at 8/40, now a composite of six runs (4, 4, 2, 4, 4, 2); rca-umb stands at 7/40 over five runs. Posted to board #203, #swarm, federation pub:showcase and core-memory#147 (comment 6160839325).
+
+Comparison of the two identical-recipe runs (Trackio, all steps logged for the second):
+
+| | 2026-10-13 (4/40) | 2026-10-14 (2/40) |
+|---|---|---|
+| reward, first vs last quarter | 0.369 vs 0.508 | 0.391 vs 0.519 |
+| steps with grad_norm > 0 | 107 of 199 logged (54%) | 158 of 289 (55%) |
+| mean frac_reward_zero_std | 0.462 | 0.453 |
+| completions/clipped_ratio | 0.992 | 0.997 |
+| step retries | 3 | 1 |
+
+Same recipe, same task list, near-identical training signals, private scores 4 and 2. With n = 2 this is only a rough read, but it is a direct measurement that a run's private score moves by about two tasks with training behaviour held essentially constant; it agrees with the null control (#161), the 45-run analysis (#182) and the collapse test (#201). It also reproduces the earlier pattern for this recipe: healthy training signals, no detectable effect on the private score.
+
+Decision (applying the rule in this ADR): the default for the next slot (O1, repeat `focus4`) is withdrawn. A third identical run is not informative, so nothing is armed for the slot of about 2026-10-15T00:41:47Z. A different entry needs a reason: either the owner's decision on a cleaner collapse variant (training reward near 1), or a rebuilt environment mirroring the operator's contract (#196, #197, #202), which should wait for dnakhla's terminal-desk-v2 result (expected about 06:00Z to 07:00Z, pre-registered by them: 4 or less counts against the interface hypothesis). Both are the owner's decisions.
+
 ## Next research item (needs the owner's approval before any build)
 
 The only remaining route to making the zero-solve families learnable is new task content: genuinely easier variants shipped in a new or extended environment image (not the knobs). Scope, pre-registration and cost are to be written as a separate ADR if approved. Nothing is started.
@@ -114,5 +132,6 @@ The only remaining route to making the zero-solve families learnable is new task
 ## Integration log
 
 - 2026-10-13 ~03:00Z: draft created; run training; Result and Decision rows pending.
+- 2026-10-14 ~04:30Z: repeat run evaluated at 2/40; default O1 withdrawn; nothing armed for 2026-10-15.
 - 2026-10-13 ~04:30Z: result integrated (4/40, account total unchanged at 8, predictions P1 to P3 hit), posted to board #190, #swarm, pub:showcase and core-memory#147. Owner decision on O1 versus O4 outstanding; nothing armed for 2026-10-14.
 - 2026-10-13 ~03:20Z: board #188 (rca-umb collapse control) added as option O4, recommendation recorded, owner decision requested.
