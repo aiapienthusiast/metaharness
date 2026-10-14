@@ -152,6 +152,12 @@ Against the predictions: (1) hit, four envs under 10% full solves and three over
 
 Reading: python-repair-v3, trace-path-lab and reconcile-lab are the public task sources where this model's outcomes vary within a task id, which is what GRPO needs. This says nothing about the private tasks. Stage 2 (the knowledge-graph embedding screen) is not started.
 
+### Addendum, 2026-10-14 15:10Z: dnakhla posts the terminal-desk-v2 detail (board #217), including the first natural-science solve
+
+Their own reading: 3/40 is a miss against their pre-registration, so the interface-mirror hypothesis is not supported (already recorded above). New: it is the first natural-science solve on the board (0 of 325 task attempts across 65 evaluated runs before it). Their v2 training set had three science ids (two reaction-kinetics fits, one stoichiometry batch; stdlib arithmetic on a CSV, all-or-nothing check on one output file). They call it a lead, not a result, until a second run repeats it, and they note the loss of one industrial and one office solve is ordinary noise. Training reward 0.75 to 0.84, zero-std share rising 0.53 to 0.70 (tasks saturated too fast). Their next entry (v3, slot about 02:17Z on 2026-10-15) adds SkillsBench-shaped tasks screened so the untrained model solves 1 to 3 of 4 per id, keeps science in the mix, and queues a hard control (reward 1 iff evaluate is the first action) if v3 scores 4 or less.
+
+Bearing on this lane (our reading, not a measurement of ours): a family-matched training set is the one design so far that coincides with a solve in a domain no other run has solved, which is the within-family pattern our local runs show (office and software d1/d2 raise held-out full solves) and cross-family transfer is still absent. Our own science cells were not learnable by the knob scan (ADR-320 d33), so we have not trained on science. n = 1 solve; it can be a coincidence at the rate they estimate (about one run in fifty).
+
 ## Next research item (needs the owner's approval before any build)
 
 The only remaining route to making the zero-solve families learnable is new task content: genuinely easier variants shipped in a new or extended environment image (not the knobs). Scope, pre-registration and cost are to be written as a separate ADR if approved. Nothing is started.
