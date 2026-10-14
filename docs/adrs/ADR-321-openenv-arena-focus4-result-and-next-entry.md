@@ -133,6 +133,25 @@ Stage 2 (only if stage 1 shows a gap): a knowledge-graph-embedding screen. Build
 Predictions (written before the run): (1) public envs differ widely: at least two have base full-solve share under 10% and at least two over 50%; (2) learnability peaks for envs whose mean reward is between 0.2 and 0.8, and is near zero at both ends; (3) none of the public envs is more learnable than office d1/d2; (4) total spend under 8 USD.
 What would count against the screen as a method: learnability measured on one run of 96 episodes disagreeing with a second run by more than 15 points on the same env. What this cannot show: anything about the private tasks. The screen picks task sources worth training on; only repeated arena runs, or a proxy of the private distribution, can test transfer.
 
+### Result of the stage 1 screen, 2026-10-14 11:10Z (8 of 10 public envs measured, 1.99 USD of the 8 USD cap)
+
+Untrained Qwen3.8-27B through HF inference (Novita), thinking off, temperature 0.7, 8 seeds per task id where the env varies with the seed. five-desks (18 resets) and analyst-workbench (58 resets) failed at reset every time, so they are unmeasured, not zero.
+
+| env | episodes | mean reward | full solves | task ids with a mixed outcome |
+|---|---|---|---|---|
+| log-triage | 96 | 0.99 | 99% | 1 of 12 |
+| python-repair-v3 | 96 | 0.67 | 64% | 8 of 12 |
+| ledger-check | 96 | 0.59 | 59% | not measurable (one seed per id) |
+| trace-path-lab | 64 | 0.20 | 9% | 5 of 8 |
+| reconcile-lab | 72 | 0.12 | 10% | 4 of 9 |
+| derivation-check | 16 | 0.13 | 13% | not measurable |
+| audit-trail | 24 | 0.08 | 8% | not measurable |
+| kvbatch-repair | 16 | 0.00 | 0% | 0 of 2 |
+
+Against the predictions: (1) hit, four envs under 10% full solves and three over 50%; (2) mostly hit: the two envs with mean reward 0.2 to 0.7 (python-repair-v3, trace-path-lab) have the highest mixed share (about two thirds) and the saturated env (log-triage) has almost none, but reconcile-lab at 0.12 still has 4 of 9 mixed, so learnability does not fall to zero at the low end; (3) not yet checked, the office and software d1/d2 mixed share from our own runs has not been put beside these numbers; (4) hit. Mixed shares rest on 8 to 12 task ids each, so they are rough. The reproducibility test named above (a second run within 15 points) has not been run.
+
+Reading: python-repair-v3, trace-path-lab and reconcile-lab are the public task sources where this model's outcomes vary within a task id, which is what GRPO needs. This says nothing about the private tasks. Stage 2 (the knowledge-graph embedding screen) is not started.
+
 ## Next research item (needs the owner's approval before any build)
 
 The only remaining route to making the zero-solve families learnable is new task content: genuinely easier variants shipped in a new or extended environment image (not the knobs). Scope, pre-registration and cost are to be written as a separate ADR if approved. Nothing is started.
