@@ -123,6 +123,16 @@ Position after four independent attempts to move the private score by training (
 
 Consequence for the decision above: the case for rebuilding our environment to mirror the operator's contract is weaker than when it was first written (#196, #197), since an entry that did so did not score better. Nothing is armed. If the owner wants any further entry, the information-bearing options are a cleaner collapse variant (training reward near 1) or many repeated runs of one recipe over days (the only way to resolve a small effect against a noise of about two tasks); both cost slots and neither has been approved.
 
+### Pre-registration, 2026-10-14 09:40Z: screen of public arena envs with HF inference (owner: "try a few different approaches")
+
+Why: nothing that moved held-out full solves locally has moved the private score, and one arena run per day cannot see an effect smaller than about 2 tasks. HF inference serves Qwen3.8-27B (the arena's base model, Novita, listed at 0.42 in / 3.0 out USD per million tokens), so base-model behaviour can be measured on many task sources for cents, without a rented GPU. Pilot 2026-10-14 (8 envs, 1 episode each): works, about 0.05 USD in total, about 0.005 USD per episode; five-desks and analyst-workbench failed at reset (one episode each), not investigated yet.
+
+Stage 1 (this entry): `eval/ext_env_eval.py`, all reachable public envs, up to 96 episodes per env, 8 seeds, hard cap 8 USD, thinking off, temperature 0.7. Measured per env: mean reward, share of full solves, and learnability = share of task ids whose repeat samples do not all score the same (the GRPO signal; zero-variance groups teach nothing). Our own families are the comparison (office and software d1/d2 are known to be learnable).
+Stage 2 (only if stage 1 shows a gap): a knowledge-graph-embedding screen. Build triples (task, family), (task, difficulty), (task, failure mode seen in the Stage 1 trajectories) and fit a small embedding (TransE-style, or ruvector's graph tooling); the claim to test is that it predicts which unmeasured task ids are learnable better than difficulty alone, scored on held-out task ids with measured learnability. If it does not beat the difficulty-only baseline, it is dropped.
+
+Predictions (written before the run): (1) public envs differ widely: at least two have base full-solve share under 10% and at least two over 50%; (2) learnability peaks for envs whose mean reward is between 0.2 and 0.8, and is near zero at both ends; (3) none of the public envs is more learnable than office d1/d2; (4) total spend under 8 USD.
+What would count against the screen as a method: learnability measured on one run of 96 episodes disagreeing with a second run by more than 15 points on the same env. What this cannot show: anything about the private tasks. The screen picks task sources worth training on; only repeated arena runs, or a proxy of the private distribution, can test transfer.
+
 ## Next research item (needs the owner's approval before any build)
 
 The only remaining route to making the zero-solve families learnable is new task content: genuinely easier variants shipped in a new or extended environment image (not the knobs). Scope, pre-registration and cost are to be written as a separate ADR if approved. Nothing is started.
