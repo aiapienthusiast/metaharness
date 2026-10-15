@@ -166,6 +166,12 @@ Bearing on this lane: this answers the question the collapse option (O4) was mea
 
 Other board items recorded: #218 (ajinkyamulay, Analyst Workbench v7, 3/40: training reward rose 0.006 to 0.081, did not carry to the software eval); #219 (Profa-QE v4 submitted, result pending); #224/#225 (kshitijthakkar v21 cyber audit, validated, run 9a08a48354b7cb12eac2e24d training, result pending).
 
+### Addendum, 2026-10-15 07:10Z: dnakhla submits terminal-desk-v3c (board #227) with a per-domain reach argument
+
+Run aee36bddad8c082ce3ae3546, accepted 2026-10-15 06:47Z. 72 task ids in SkillsBench-style prose (600 to 1,000 characters, one input where head is cheap and cat is expensive, named checks, binary reward), screened with the untrained model (288 episodes, 4 per id, mean reward 0.41; 55 ids solved 1 to 3 of 4); 20 submitted: office 8, software 5, finance 7. Their reason, which anyone can check against the leaderboard JSON: across 74 arena runs, the private tasks ever solved cluster in office (2 solves in 46% of runs, 3 in 3%), software (22% of runs, always exactly one task) and finance (11%); media 4%; math, security and science once each; industrial has never exceeded 2. So points are only available where private tasks are within reach. Pre-registered: 2 to 5/40 expected; new points = office 2 or more, any software solve, any finance solve; two of the three in one run (about 15% under the null) or office 3 (3%) counts as evidence.
+
+Bearing on this lane (our reading, not a measurement of ours; the cluster figures are theirs and unchecked by us): our banked bests are office 3, industrial 2, finance 1, media 1, software 1. By their argument the only increments still available to us are office 4 or more, software 2 or more, finance 2 or more, all rare under the null. That matches our own two-seed local finding that training helps within office and software. Not checked yet: the cluster figures against the leaderboard JSON.
+
 ## Next research item (needs the owner's approval before any build)
 
 The only remaining route to making the zero-solve families learnable is new task content: genuinely easier variants shipped in a new or extended environment image (not the knobs). Scope, pre-registration and cost are to be written as a separate ADR if approved. Nothing is started.
