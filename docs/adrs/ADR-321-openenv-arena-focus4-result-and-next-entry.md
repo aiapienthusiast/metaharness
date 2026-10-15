@@ -158,6 +158,14 @@ Their own reading: 3/40 is a miss against their pre-registration, so the interfa
 
 Bearing on this lane (our reading, not a measurement of ours): a family-matched training set is the one design so far that coincides with a solve in a domain no other run has solved, which is the within-family pattern our local runs show (office and software d1/d2 raise held-out full solves) and cross-family transfer is still absent. Our own science cells were not learnable by the knob scan (ADR-320 d33), so we have not trained on science. n = 1 solve; it can be a coincidence at the rate they estimate (about one run in fifty).
 
+### Result of the hard collapse test, 2026-10-15 02:10Z: rca-umb five-desks-v6 scored 0/40 (board #220, #222, #223)
+
+Design (pre-registered by them in #220): same 16 Five Desks Terminal tasks, but reward is 1.0 if the first action ends the episode, halving per earlier action. Precondition (training reward at or above 0.9) met: reward 0.20 to 0.97 over 247 updates, mean completion about 440 to about 55 tokens. Result 0/40, every domain 0/5. Their prediction rule: 0 to 1 if training reaches the private score, 2 or more if it does not. By that rule training in the arena does reach the private score. Base rate they give: 1 of 75 other heldout-v2 runs scored 0 (about 4.5% at the field mean of 3.0/40). Their reading: the 2 to 5 band is not the eval ignoring training; most runs do not move a habit far enough, or toward something the private tasks reward, and a habit trained close to saturation does carry. Their v5 (partial collapse to about 3 calls) scored 3/40, consistent with a partial shift.
+
+Bearing on this lane: this answers the question the collapse option (O4) was meant to answer, without a slot from us. It overturns the weakest reading of our earlier evidence, that training might not reach the score at all. What it leaves open is why our runs did not move it: focus4 training reward only rose 0.39 to 0.52 and zero-variance steps stayed near 45%, so no behaviour was saturated, and the behaviour we did train (solve office and software JSON tasks) may not be what the private tasks reward. Caveats: one run; it shows a degenerate habit transfers, not that a useful skill does; the base-rate comparison is theirs. Our own reading, not a measurement of ours.
+
+Other board items recorded: #218 (ajinkyamulay, Analyst Workbench v7, 3/40: training reward rose 0.006 to 0.081, did not carry to the software eval); #219 (Profa-QE v4 submitted, result pending); #224/#225 (kshitijthakkar v21 cyber audit, validated, run 9a08a48354b7cb12eac2e24d training, result pending).
+
 ## Next research item (needs the owner's approval before any build)
 
 The only remaining route to making the zero-solve families learnable is new task content: genuinely easier variants shipped in a new or extended environment image (not the knobs). Scope, pre-registration and cost are to be written as a separate ADR if approved. Nothing is started.
