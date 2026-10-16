@@ -55,3 +55,43 @@ node packages/darwin-mode/bench/contrastive/run.mjs --out=/tmp/contrastive.json
 For an explicitly paid live editor smoke, set `OPENROUTER_API_KEY` in the process environment and run `node packages/darwin-mode/bench/contrastive/live-pilot.mjs --live --out=/tmp/contrastive-live.json`. It uses real provider editors and a synthetic deterministic executor. The local reservation cap is $0.25. No credentials are written to the report.
 
 The benchmark measures mechanism correctness, operation counts, source identity and orchestration latency. It does not demonstrate general LLM improvement, production safety, or superiority over current Darwin. See [ADR-319](https://github.com/ruvnet/metaharness/blob/main/docs/adrs/ADR-319-bounded-contrastive-development.md).
+
+## Independent confirmation in 0.12.0
+
+A development improvement is a hypothesis. Before a deployment considers adoption, evaluate one frozen candidate against its frozen baseline on independent task pairs:
+
+```js
+import { confirmContrastive } from '@metaharness/darwin/contrastive';
+
+const confirmation = await confirmContrastive({
+  tenantId: 'acme', projectId: 'support',
+  environment: { model: 'pinned-model-id', evaluatorVersion: 1 },
+  envelope: { network: false, shell: false, promotion: false },
+  baseline,
+  candidate: developmentResult.candidate,
+  developmentTaskIds: devIds,
+  confirmationTaskIds: unseenIds,
+  policy: { minCases: 20, minWins: 5, maxRegressions: 0,
+    minGain: 0.05, alpha: 0.05 },
+  budget: { maxUsd: 0.8, maxCalls: 40, pairUsd: 0.02, timeoutMs: 300000 },
+  evaluator: { surfaceAware: true, evaluatePair: executePair },
+});
+console.log(confirmation.verdict, confirmation.stats, confirmation.promotion);
+```
+
+The deployment supplies executePair. For each input.taskId it executes both documents under identical task, model, tool and output limits, then returns tenantId, projectId, environmentDigest, envelopeDigest, taskId, appliedBaselineDigest, appliedCandidateDigest, baselinePassed, candidatePassed and costUsd. These attestations must match the input. Keep the case payload and gold answer inside the evaluator, outside editor inputs. A callback may contain multiple provider calls; its ceiling applies to their combined cost.
+
+Both task partitions must have unique IDs with no overlap. Derive IDs from normalized input content and keep a durable dataset registry. The API cannot detect reused inputs hidden behind different IDs or data that was already present in model training.
+
+timeoutMs bounds the entire confirmation phase. It does not reset for each pair. All declared pairs must complete before confirmation. The gate separately checks minimum case count, wins, absolute accuracy gain, allowed regressions and an exact one-sided sign test over discordant pairs. Five wins with zero losses give p = 0.03125. A tie, insufficient evidence, or forbidden regression cannot confirm a candidate.
+
+The result includes the policy and its digest, environment and dataset digests, paired counts, receipts and costs. It always returns promotion: not-authorized. Scope and digest checks attest identity; they are not cryptographic proof that a dishonest callback executed the claimed task.
+
+Freeze the candidate, thresholds and set before evaluation. Reusing confirmation failures to tune the next candidate invalidates the same set as fresh evidence. Independent task pairs and a prespecified test are statistical assumptions. Multiple candidates or repeated tests require a separate multiplicity policy and fresh data. Production authorization and security checks remain deployment responsibilities.
+
+For the pinned public intent-classification experiment, see bench/confirmation. Equal spending ceilings do not establish identical actual spend; the report gives both caps and measured costs.
+
+
+### Measured 0.12.0 pilot
+
+In one frozen public CLINC150 subset (24 development and 40 unseen confirmation requests), development accuracy improved from 23/24 to 24/24. Baseline, candidate and control each scored 38/40 on confirmation; both paired superiority tests returned p = 1 and rejected. Candidate inference cost increased 15.68% in this run. Keep the baseline. Total provider usage reported $0.007642223 for 253 requests, with $0.596 conservatively reserved against a $1 cap. This small public experiment does not establish general model or agent gains. Full evidence is attached to the darwin-v0.12.0 GitHub release.

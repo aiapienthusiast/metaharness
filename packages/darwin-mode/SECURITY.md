@@ -203,3 +203,7 @@ new obfuscation is found, add it as a failing test, harden
 ## Contrastive API (0.11.0)
 
 The contrastive core validates bounded JSON and never evaluates embedded code. Trusted callbacks must enforce actual provider ceilings, cancellation and OS isolation. Digest matching is content identity and adapter attestation, not proof against a dishonest executor. Editors receive evidence without scores; retrieved memory rejects extra schema fields. Experimental memory cannot authorize promotion. See CONTRASTIVE.md and bench/contrastive/security-review.md.
+
+## Independent confirmation (0.12.0)
+
+Confirmation rejects overlapping task IDs, scope or applied-digest mismatches, malformed outcomes, forbidden regressions, insufficient evidence, overspend and late responses. The evaluator must enforce actual capabilities and equal experimental conditions. The caller must protect gold answers, derive stable task identities, retire exposed confirmation sets and control repeated testing. A confirmed experimental result never grants production authority.
