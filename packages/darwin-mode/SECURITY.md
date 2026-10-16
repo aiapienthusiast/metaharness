@@ -198,3 +198,8 @@ npx vitest run packages/darwin-mode/__tests__/security
 former §7a content-scan gaps are now closed and pinned as regression tests. If a
 new obfuscation is found, add it as a failing test, harden
 `BLOCKED_CONTENT_PATTERNS`, and update this doc together.
+
+
+## Contrastive API (0.11.0)
+
+The contrastive core validates bounded JSON and never evaluates embedded code. Trusted callbacks must enforce actual provider ceilings, cancellation and OS isolation. Digest matching is content identity and adapter attestation, not proof against a dishonest executor. Editors receive evidence without scores; retrieved memory rejects extra schema fields. Experimental memory cannot authorize promotion. See CONTRASTIVE.md and bench/contrastive/security-review.md.
