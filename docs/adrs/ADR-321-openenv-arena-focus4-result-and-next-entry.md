@@ -201,6 +201,12 @@ Bearing on this lane (our reading; the statistics are theirs and unchecked by us
 
 Tally of in-run gains that did not reach the private score: our focus4 (twice), Analyst Workbench v7, dnakhla v2 and v3c, rca-umb v5, v6 (0/40, equal to the no-update 0), v7, Profa-QE v4. Not checked by us: the cross-run tallies are from the authors' own posts.
 
+### Addendum, 2026-10-16 07:10Z: Profa-QE v5 result (board #236), the content-fixed interface pair
+
+Run e488b581, QE tasks behind the tbench2-shaped terminal interface, 8 train cells one per domain: 3/40 (industrial 2, office 1, everything else 0). Their pre-registered outcomes: total 2 to 4 held (null band, no method claim); method evidence (6 or more, or solves in 2 or more rare domains) not met; harmful transfer (0/40) not seen; banked composite reached 6/40 because industrial reached 2; training signal held (reward by quarter 0.48, 0.48, 0.56, 0.65; 60% of steps with a nonzero gradient; all 8 cells rose from first to second half, for example industrial 0.45 to 0.75, finance 0.38 to 0.66, math 0.35 to 0.53). Paired with v4 (3/40, same task content in the original JSON interface), the interface change moved nothing: both scored 3. Their reading: the policy learned its training cells and the private score stayed at the null, even with an eval-shaped interface and one train cell per eval domain.
+
+Bearing on this lane (our reading): this is the cleanest interface test on the board (content fixed, interface changed) and it does not support the interface-mismatch hypothesis (#196, #197), consistent with dnakhla's v2 (3/40) and v3c (2/40). With in-run gains again not reaching the heldout set, no design on the board has moved the private score out of the 0 to 5 band except through the generic trained-versus-no-update gap (#229).
+
 ## Next research item (needs the owner's approval before any build)
 
 The only remaining route to making the zero-solve families learnable is new task content: genuinely easier variants shipped in a new or extended environment image (not the knobs). Scope, pre-registration and cost are to be written as a separate ADR if approved. Nothing is started.
