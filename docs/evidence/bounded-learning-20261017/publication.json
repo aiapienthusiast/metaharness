@@ -6,7 +6,7 @@
   "sourceCommit": "88c9f88",
   "publishExitCode": 0,
   "completionVerified": true,
-  "publicRegistryVerification": "PENDING: registry returned E404 after accepted publish",
+  "publicRegistryVerification": "PASS: matching SHA512 and fresh registry install with ESM/CJS exports",
   "integrity": "sha512-KhJ5teEbu1fpbwALAflMl+dYc+xY0PdwZuyLA+ukr/Q35mbt/SId+wIk2EwxW7BrQMaoor5lub5tn3GiFZBrzw==",
   "packageTestsPassed": 159,
   "localTarballEsmCjs": "PASS",
