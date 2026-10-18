@@ -592,6 +592,23 @@ export interface ScaffoldResult {
  * template variables (should be empty for a clean run).
  */
 
+/**
+ * ADR-022's exact safe-default MCP policy object. Every capability starts at
+ * its safe value — the author opts INTO risk, never out of safety.
+ */
+function defaultMcpPolicy(): Record<string, unknown> {
+  return {
+    defaultDeny: true,
+    allowNetwork: false,
+    allowShell: false,
+    allowFileWrite: false,
+    requireApprovalForDangerous: true,
+    toolTimeoutMs: 30000,
+    maxToolCallsPerTurn: 8,
+    auditLog: true,
+  };
+}
+
 /** Standard MIT license text for a scaffolded harness (GH #23). */
 function mitLicense(name: string): string {
   const year = new Date().getFullYear();
@@ -702,6 +719,37 @@ export async function scaffold(opts: ScaffoldOptions): Promise<ScaffoldResult> {
   }
   if (!rendered.some(r => r.path === 'LICENSE')) {
     rendered.push({ path: 'LICENSE', content: mitLicense(opts.name), rendered: false, unresolved: [] });
+  }
+
+  // Dream Cycle 2026-10-18 (security-adversarial, closes a gap disclosed-but-
+  // not-fixed on 2026-09-08, issue #297): ADR-022 is Accepted and specifies
+  // that `local`/`remote` MCP mode ships a default-deny `.harness/mcp-policy.json`
+  // alongside the MCP registration, and that `off` mode nulls the policy —
+  // "off" is a first-class mode (ADR-022 Consequences), so emission must stay
+  // keyed to whether this harness actually registers an MCP server, not
+  // unconditional. Every one of today's 20 templates' `.claude/settings.json.tmpl`
+  // happens to register one (`mcp: 'local'` is effectively hardcoded at the
+  // hostConfigFiles call above — there is no `--mcp off` flag yet), so this
+  // reads as "always emit" today, but keying it to the real rendered output
+  // keeps the invariant correct if/when a no-MCP template or `--mcp off` is
+  // added, rather than baking in today's accident as tomorrow's bug.
+  {
+    const settingsIdx = rendered.findIndex(r => r.path === '.claude/settings.json');
+    let mcpRegistered = rendered.some(r => r.path === '.mcp.json');
+    if (!mcpRegistered && settingsIdx !== -1) {
+      try {
+        const settings = JSON.parse(rendered[settingsIdx]!.content) as { mcpServers?: Record<string, unknown> };
+        mcpRegistered = !!(settings.mcpServers && Object.keys(settings.mcpServers).length > 0);
+      } catch { /* unparseable settings.json: treat as not registered, nothing to do */ }
+    }
+    if (mcpRegistered && !rendered.some(r => r.path === '.harness/mcp-policy.json')) {
+      rendered.push({
+        path: '.harness/mcp-policy.json',
+        content: JSON.stringify(defaultMcpPolicy(), null, 2) + '\n',
+        rendered: false,
+        unresolved: [],
+      });
+    }
   }
 
   // ADR-147: deep-integrate Darwin Mode. Default ON (opt out with --no-darwin).

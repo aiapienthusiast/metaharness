@@ -131,6 +131,88 @@ describe('scaffold (e2e)', () => {
   });
 });
 
+// Dream Cycle 2026-10-18 (security-adversarial): ADR-022 requires a
+// default-deny `.harness/mcp-policy.json` whenever MCP is on; the CLI
+// scaffolder registered every template's self-referential MCP server in
+// `.claude/settings.json` but never wrote this file (disclosed-but-unfixed
+// since 2026-09-08, issue #297/#298) — confirmed live: a fresh `minimal`
+// scaffold scanned HIGH ("MCP server with no policy") via `harness mcp-scan`.
+describe('scaffold — ADR-022 default-deny mcp-policy.json (Dream Cycle 2026-10-18)', () => {
+  it('emits .harness/mcp-policy.json with the ADR-022 safe-default shape when the harness registers an MCP server', async () => {
+    const root = await tmpRoot('e2e-mcp-policy-');
+    const target = join(root, 'my-bot');
+    const r = await scaffold({
+      name: 'my-bot', template: 'minimal', host: 'claude-code',
+      targetDir: target, generatorVersion: '0.1.0',
+    });
+    expect(r.paths).toContain('.harness/mcp-policy.json');
+
+    const settings = JSON.parse(await readFile(join(target, '.claude/settings.json'), 'utf-8'));
+    expect(Object.keys(settings.mcpServers ?? {}).length).toBeGreaterThan(0);
+
+    const policy = JSON.parse(await readFile(join(target, '.harness/mcp-policy.json'), 'utf-8'));
+    expect(policy).toEqual({
+      defaultDeny: true,
+      allowNetwork: false,
+      allowShell: false,
+      allowFileWrite: false,
+      requireApprovalForDangerous: true,
+      toolTimeoutMs: 30000,
+      maxToolCallsPerTurn: 8,
+      auditLog: true,
+    });
+
+    // The new file must be covered by the manifest's own fingerprint list —
+    // same provenance guarantee (ADR-011 witness) as every other rendered file.
+    const manifest = JSON.parse(await readFile(join(target, '.harness', 'manifest.json'), 'utf-8'));
+    expect(manifest.files['.harness/mcp-policy.json']).toBeDefined();
+  });
+
+  it('a freshly scaffolded harness scans clean of the no-policy HIGH finding (mcp-scan, ADR-022 test contract)', async () => {
+    const root = await tmpRoot('e2e-mcp-scan-');
+    const target = join(root, 'scanned-bot');
+    await scaffold({
+      name: 'scanned-bot', template: 'minimal', host: 'claude-code',
+      targetDir: target, generatorVersion: '0.1.0',
+    });
+    const { scanMcp } = await import('../src/mcp-scan.js');
+    const report = scanMcp(target);
+    expect(report.mcpEnabled).toBe(true);
+    expect(report.findings.some(f => f.id === 'no-policy')).toBe(false);
+    expect(report.worst).not.toBe('high');
+  });
+
+  it('does NOT emit .harness/mcp-policy.json when the rendered output registers no MCP server (no .claude/settings.json at all)', async () => {
+    const root = await tmpRoot('e2e-mcp-off-');
+    const target = join(root, 'codex-bot');
+    // host: 'codex' (claude-code not in the host set) drops `.claude/settings.json`
+    // entirely per the GH #11 filter a few lines above in src/index.ts — a real,
+    // already-exercised code path, not a synthetic bypass. No MCP registration
+    // surface this scanner key on → no policy file should appear.
+    const r = await scaffold({
+      name: 'codex-bot', template: 'minimal', host: 'codex',
+      targetDir: target, generatorVersion: '0.1.0',
+    });
+    expect(r.paths).not.toContain('.claude/settings.json');
+    expect(r.paths).not.toContain('.harness/mcp-policy.json');
+  });
+
+  it('every one of the 20 shipped templates scans clean of the no-policy HIGH finding', async () => {
+    const { TEMPLATES } = await import('../src/index.js');
+    const { scanMcp } = await import('../src/mcp-scan.js');
+    for (const t of TEMPLATES) {
+      const root = await tmpRoot(`e2e-mcp-all-${t.replace(/[^a-z0-9]/gi, '_')}-`);
+      const target = join(root, 'bot');
+      await scaffold({
+        name: 'bot', template: t, host: 'claude-code',
+        targetDir: target, generatorVersion: '0.1.0',
+      });
+      const report = scanMcp(target);
+      expect(report.findings.some(f => f.id === 'no-policy'), `template ${t} still flags no-policy`).toBe(false);
+    }
+  });
+});
+
 describe('detectRufloProject', () => {
   it('returns found: false on an empty dir', async () => {
     const root = await tmpRoot('e2e-detect-');
