@@ -59,7 +59,8 @@ export function slotStatus({ submissions, nowMs, quota = null } = {}) {
  */
 export function latestValidatedId(submissions) {
   if (!Array.isArray(submissions) || submissions.some(s => !s || typeof s !== 'object')) return undefined;
-  const validated = submissions.filter(s => s.state === 'validated');
+  // `done` = validated and then evaluated (live arena, 2026-10-18); a done entry carrying an error code is not a validated body
+  const validated = submissions.filter(s => s.state === 'validated' || (s.state === 'done' && !s.error_code));
   if (validated.some(s => typeof s.submission_id !== 'string' || !s.submission_id)) return undefined;
   if (!validated.length) return null;
   const times = validated.map(s => { const f = ACCEPTED_AT_FIELDS.find(k => s[k] !== undefined && s[k] !== null); return f ? parseTimestampMs(s[f]) : null; });

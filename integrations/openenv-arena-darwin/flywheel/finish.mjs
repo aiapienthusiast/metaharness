@@ -156,7 +156,7 @@ export async function follow(x, pending, polls) {
     if (i > 0) await deps.sleep(x.config.poll.intervalS * 1000);
     let s;
     try { s = await deps.arena.getSubmission(pending.submissionId); } catch (e) { j.append('submit', 'status-error', { error: redact(e?.message) }); continue; }
-    const state = s?.state ?? 'absent';
+    const state = s?.state === 'done' ? 'validated' : (s?.state ?? 'absent'); // an evaluated submission was validated first
     j.append('submit', 'status', { submissionId: pending.submissionId, state, slotState: s?.slot_state ?? null, errorOrigin: s?.error_origin ?? null });
     st.submission = { ...(st.submission ?? {}), submissionId: pending.submissionId, forDate: pending.date, state,
       slotState: s?.slot_state ?? null, errorOrigin: s?.error_origin ?? null, runId: s?.run_id ?? null };

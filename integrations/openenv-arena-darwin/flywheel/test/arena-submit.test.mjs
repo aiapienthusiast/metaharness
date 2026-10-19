@@ -181,3 +181,17 @@ test('adv 9: latestValidatedId = the newest validated OWN submission; none = nul
   for (const bad of [null, undefined, 'x', [null], [sub('', 'validated')], [{ state: 'validated' }]]) assert.equal(latestValidatedId(bad), undefined, JSON.stringify(bad));
   assert.equal(slotStatus({ submissions: [sub('v1', 'validated', '2026-10-01T10:00:00Z')], nowMs: Date.parse('2026-10-09T00:00:00Z') }).latestValidatedId, 'v1');
 });
+
+test('an evaluated submission (`done`) still counts as the account\'s validated incumbent; a failed `done` does not', async () => {
+  const { latestValidatedId } = await import('../arena-slot.mjs');
+  const sub = (id, state, error_code = null) => ({ submission_id: id, state, error_code, slot: { state: 'used' } });
+  assert.equal(latestValidatedId([sub('ev', 'done')]), 'ev', 'live arena: every evaluated submission reads `done`');
+  assert.equal(latestValidatedId([sub('new', 'done'), sub('old', 'done')]), 'new');
+  assert.equal(latestValidatedId([sub('bad', 'done', 'RUN_FAILED'), sub('ok', 'done')]), 'ok');
+  assert.equal(latestValidatedId([sub('bad', 'done', 'RUN_FAILED')]), null);
+});
+
+test('summarizeSubmission accepts the live `done` state instead of throwing INVALID_SUBMISSION_STATE', async () => {
+  const { summarizeSubmission } = await import('../arena-api.mjs');
+  assert.equal(summarizeSubmission({ submission_id: 'ev', state: 'done', slot: { state: 'used' } }).state, 'done');
+});

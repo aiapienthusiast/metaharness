@@ -27,7 +27,8 @@ const MAX_BODY = 2 * 1024 * 1024;
 const CODE_RE = /^[A-Z_]{1,80}$/;
 const TRANSIENT = new Set([502, 503, 504]);
 const NOTHING_STORED_503 = new Set(['IMAGE_UNAVAILABLE', 'REGISTRY_RATE_LIMITED', 'CAPACITY_BUSY', 'DATASET_UNAVAILABLE']);
-const ARENA_STATES = new Set(['validating', 'validated', 'rejected', 'pending', 'accepted']);
+// `done` = validated and evaluated; the live arena (observed 2026-10-18) moves every finished submission there.
+const ARENA_STATES = new Set(['validating', 'validated', 'rejected', 'pending', 'accepted', 'done']);
 
 export class ArenaError extends Error {
   constructor(status, code, { retryAfterS = null } = {}) {
