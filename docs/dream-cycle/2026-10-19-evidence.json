@@ -3,8 +3,8 @@
   "deep_surface": "host-adapters",
   "scan_surfaces": ["kernel", "sdk"],
   "session_commit_base": "e0dfd44da72b7adfb7c57fdd42d124be58ed7086",
-  "issue": "TBD",
-  "pull_request": "TBD",
+  "issue": 418,
+  "pull_request": 419,
   "classification": "MEASUREMENT",
   "hypothesis": {
     "type": "HYPOTHESIS",
