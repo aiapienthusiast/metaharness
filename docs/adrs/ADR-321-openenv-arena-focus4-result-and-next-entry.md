@@ -227,7 +227,7 @@ rGi: the env lane's orchestration/ runtime is a journaled, capability-gated evid
 
 ### Results of the 2026-10-18 and 2026-10-19 draws, and the first unattended re-draw (recorded 2026-10-19)
 
-`metaharness-mix8-20261018` evaluated 4/40 (industrial 2, science 1, office 1, media 1; delta 0 against the account best-per-domain at the time except natural-science, which was 0). Natural-science 1 was a new best, so the account total rose from 8 to 9/40. Rank 1; rca-umb, jjmachan, distributedtensor and dnakhla are at 7, so the lead is 2 points.
+`metaharness-mix8-20261018` evaluated 4/40 (industrial 2, science 1, office 1). Natural-science 1 was a new best, so the account total rose from 8 to 9/40. Rank 1; rca-umb, jjmachan, distributedtensor and dnakhla are at 7, so the lead is 2 points.
 
 The first unattended re-draw went out at 2026-10-19T03:17:33Z from the hourly timer: `metaharness-darwin-2026-10-18-redraw-36468965c9`, the same stored request (sha256 `e00c7e74...`) under a fresh id, all pre-submit checks re-run, no GPU, $0. It evaluated 3/40 (industrial 1, office 2), no new best in any domain, so the total stays 9/40 (arena delta -1 against the previous run, which does not affect best-per-domain). The arena logged an infrastructure alert on that run ("Worker shutdown not confirmed ... retrying the same task from checkpoint step 134"); whether it cost score is not known. The 08:18 EDT tick reported slot-busy, as designed.
 
