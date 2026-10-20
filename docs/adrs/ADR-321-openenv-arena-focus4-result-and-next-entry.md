@@ -237,6 +237,8 @@ Flywheel fix: the arena now moves every finished submission to state `done`. The
 
 Host incident, 2026-10-18: a runaway reached about 24.7k tasks and 108 GB anonymous memory and froze the workstation. The flywheel was ruled out; the culprit is unknown. Containment added: TasksMax=16000 on user-1000.slice and per-command forensics in memwatch. Not a flywheel property, recorded here because the flywheel runs on that host.
 
+Third draw of the same stored request: `metaharness-darwin-2026-10-19-redraw-36468965c9` (run f057adeb, rendered request sha256 `618b7bc5f1a14a9796b201e192a2c120d491ab6a045168e094b4b64534e96a1a`), queued 2026-10-20T03:17:46Z by the hourly timer after the swarm-read marker was refreshed on the owner's direct word ("lets try to keep our lead"). It evaluated 2/40 (industrial 1, office 1), arena delta -2; no new per-domain best, composite stays 9/40 over 9 runs, lead 2 over dnakhla, rca-umb and the others at 7. The arena logged the same worker-shutdown infrastructure alert (retry from checkpoint step 144). Same request body, three draws: 4, 3, 2, which the measured two-task noise predicts; not a trend. Posted: board #302 (Oct 18 and 19 results) and #307 (this result), #swarm, core-memory#147. The review lane's HOLD in #swarm is unchanged; the draws proceed on the owner's direct instruction, and Slack is treated as input only.
+
 Board messages #247 to #259 are not yet summarised in this ADR. Last night's results have not yet been posted to the board, #swarm, pub:showcase or core-memory#147. The nightly default stays the mix8 re-draw; a math- or cybersecurity-targeted variant is a candidate separate run and needs the owner's approval, a dry run, and all pre-submit checks on its exact digest before it could take a slot.
 
 ## Next research item (needs the owner's approval before any build)
@@ -255,7 +257,8 @@ The only remaining route to making the zero-solve families learnable is new task
 
 ## Integration log
 
-- 2026-10-19 ~12:50Z: recorded mix8-20261018 (4/40, total 8 to 9), the first unattended re-draw (3/40, no change), the `done`-state flywheel fix and the host incident. Nothing posted publicly yet.
+- 2026-10-20 ~13:30Z: recorded the Oct 20 draw (2/40, composite 9/40 over 9 runs) and posted it to the board (#307), #swarm and core-memory#147.
+- 2026-10-19 ~12:50Z: recorded mix8-20261018 (4/40, total 8 to 9), the first unattended re-draw (3/40, no change), the `done`-state flywheel fix and the host incident. Results posted to the board (#302), #swarm and core-memory#147.
 
 - 2026-10-13 ~03:00Z: draft created; run training; Result and Decision rows pending.
 - 2026-10-14 ~04:30Z: repeat run evaluated at 2/40; default O1 withdrawn; nothing armed for 2026-10-15.
