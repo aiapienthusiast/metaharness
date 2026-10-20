@@ -225,6 +225,20 @@ Cloud /schedule routine (trig_01CXqqm4YXdaDbn2XimpALRw, 08:00Z daily): read-only
 
 rGi: the env lane's orchestration/ runtime is a journaled, capability-gated evidence workflow that denies arena.submit by design and promotes a curriculum only on paired proxy-checkpoint transfer evidence (README there). It does not gate the daily POST. Wiring it to the daily run would need that transfer evidence, which exists only as Seraphina's unanswered lane.
 
+### Results of the 2026-10-18 and 2026-10-19 draws, and the first unattended re-draw (recorded 2026-10-19)
+
+`metaharness-mix8-20261018` evaluated 4/40 (industrial 2, science 1, office 1, media 1; delta 0 against the account best-per-domain at the time except natural-science, which was 0). Natural-science 1 was a new best, so the account total rose from 8 to 9/40. Rank 1; rca-umb, jjmachan, distributedtensor and dnakhla are at 7, so the lead is 2 points.
+
+The first unattended re-draw went out at 2026-10-19T03:17:33Z from the hourly timer: `metaharness-darwin-2026-10-18-redraw-36468965c9`, the same stored request (sha256 `e00c7e74...`) under a fresh id, all pre-submit checks re-run, no GPU, $0. It evaluated 3/40 (industrial 1, office 2), no new best in any domain, so the total stays 9/40 (arena delta -1 against the previous run, which does not affect best-per-domain). The arena logged an infrastructure alert on that run ("Worker shutdown not confirmed ... retrying the same task from checkpoint step 134"); whether it cost score is not known. The 08:18 EDT tick reported slot-busy, as designed.
+
+All eight of our evaluated runs (solved of 40; domain order cyber, finance, industrial, math, media, science, office, software): redraw-1019 3 (00100020), mix8-1018 4 (00200110), focus4-1014 2 (00100010), focus4-1013 4 (00200020), mix8-1012 4 (01200010), office-1011 2 (00100010), office-1010 4 (00101011), mix8-1009 4 (00000031). Reading, stated as measured counts only: no run of ours has solved a cybersecurity or math task; the best single run is 4/40; the 9/40 total is the union of per-domain bests across noisy draws. More identical re-draws add points only if a draw beats a current per-domain best at one-task granularity, with about two tasks of run-to-run noise. This is not a method claim.
+
+Flywheel fix: the arena now moves every finished submission to state `done`. The flywheel did not know it, so the arena client rejected the submissions list (`INVALID_SUBMISSION_STATE`) and the incumbent-vs-board cross-check could raise `incumbent-mismatch`. Fixed in arena-api.mjs, arena-slot.mjs (`latestValidatedId` treats `done` without an error code as validated) and finish.mjs, with two tests (local commit `9ce427d2`, not pushed); the full flywheel suite passed (331 pass, 0 fail, 11 skipped) and a live tick agreed with the board. A slot also cannot be reopened early on a `done` state.
+
+Host incident, 2026-10-18: a runaway reached about 24.7k tasks and 108 GB anonymous memory and froze the workstation. The flywheel was ruled out; the culprit is unknown. Containment added: TasksMax=16000 on user-1000.slice and per-command forensics in memwatch. Not a flywheel property, recorded here because the flywheel runs on that host.
+
+Board messages #247 to #259 are not yet summarised in this ADR. Last night's results have not yet been posted to the board, #swarm, pub:showcase or core-memory#147. The nightly default stays the mix8 re-draw; a math- or cybersecurity-targeted variant is a candidate separate run and needs the owner's approval, a dry run, and all pre-submit checks on its exact digest before it could take a slot.
+
 ## Next research item (needs the owner's approval before any build)
 
 The only remaining route to making the zero-solve families learnable is new task content: genuinely easier variants shipped in a new or extended environment image (not the knobs). Scope, pre-registration and cost are to be written as a separate ADR if approved. Nothing is started.
@@ -240,6 +254,8 @@ The only remaining route to making the zero-solve families learnable is new task
 - Local held-out experiments and predictions: ADR-320 decisions 27 to 34 (local commits through `89231d11`).
 
 ## Integration log
+
+- 2026-10-19 ~12:50Z: recorded mix8-20261018 (4/40, total 8 to 9), the first unattended re-draw (3/40, no change), the `done`-state flywheel fix and the host incident. Nothing posted publicly yet.
 
 - 2026-10-13 ~03:00Z: draft created; run training; Result and Decision rows pending.
 - 2026-10-14 ~04:30Z: repeat run evaluated at 2/40; default O1 withdrawn; nothing armed for 2026-10-15.
