@@ -70,6 +70,26 @@ const KERNEL_VERSION = resolveKernelVersion();
 export const HOSTS = ['claude-code', 'codex', 'pi-dev', 'hermes', 'openclaw', 'rvm', 'copilot', 'opencode', 'github-actions', 'prime-agent'] as const;
 export type Host = (typeof HOSTS)[number];
 
+// Dream Cycle 2026-10-20 (generator-genome) — the real `metaharness`-level
+// subcommand nouns, single-sourced so the "did you mean" guard below and the
+// usage text can't drift independently of `runMetaHarnessSubcommand`'s switch
+// (2026-08-27's gist found the usage text already missing 4 of these).
+export const METAHARNESS_VERBS = [
+  'analyze', 'genome', 'score', 'weight-eft', 'learn', 'redblue', 'flywheel', 'turn-credit', 'avo', 'proxy',
+] as const;
+
+// Words a CLI user reasonably expects to be a diagnostic/info subcommand,
+// not a project name — reproduced live 2026-10-20: each one silently
+// scaffolded a harness directory of that name and exited 0 instead of
+// erroring, because `runMetaHarnessSubcommand` returns null for anything it
+// doesn't recognize and `main()` falls through to the legacy bare-name
+// scaffold path with no reserved-word check. Deferred from 2026-08-27's
+// Dream Cycle ("doctor"/"diag" discovery) to this generator-genome slot.
+export const RESERVED_LOOKS_LIKE_A_COMMAND = new Set([
+  'doctor', 'diag', 'audit', 'validate', 'compare', 'repo-scorecard',
+  'mcp-scan', 'threat-model', 'sbom', 'secrets', 'help', 'version',
+]);
+
 export const TEMPLATES = [
   'minimal',
   'vertical:devops',
@@ -1016,6 +1036,15 @@ export async function main(argv: string[]): Promise<number> {
 
   const args = parseArgs(argv);
 
+  // See RESERVED_LOOKS_LIKE_A_COMMAND above. `--force` still lets someone
+  // scaffold a project literally named e.g. "doctor" on purpose.
+  if (args.name && !args.force && RESERVED_LOOKS_LIKE_A_COMMAND.has(args.name)) {
+    console.error(`"${args.name}" looks like a command, not a project name — it is not a recognized metaharness subcommand.`);
+    console.error(`Known subcommands: ${METAHARNESS_VERBS.join(', ')}`);
+    console.error(`To scaffold a project literally named "${args.name}" anyway, re-run with --force.`);
+    return 2;
+  }
+
   if (args.list) {
     for (const line of formatCatalog(loadCatalog())) console.log(line);
     return 0;
@@ -1078,6 +1107,10 @@ export async function main(argv: string[]): Promise<number> {
     console.log('       npx metaharness analyze <repo>           (recommend a harness plan, no-exec)');
     console.log('       npx metaharness genome <repo>            (7-section repo readiness)');
     console.log('       npx metaharness learn --host <h> --model <m> --slice <manifest>   (ADR-228 GEPA learning run — $0 dry-run by default, --run to spend; needs a repo checkout)');
+    console.log('       npx metaharness weight-eft <export|train|eval|status>   (ADR-198 evolutionary fine-tuning; $0 export/dry-run, GPU-gated --train)');
+    console.log('       npx metaharness redblue <init|run|attack|patch|retest|report>   (adversarial red/blue eval of an agent/workflow you own; $0 with --mock-judge)');
+    console.log('       npx metaharness flywheel <run|replay|graph>   (promotion loop: run/measure/mutate/verify/promote; replay/graph are read-only)');
+    console.log('       npx metaharness turn-credit <process|report>   (ADR-248 offline recursive turn-level credit from recorded trajectories)');
     console.log('       npx metaharness avo <trusted-key|gate-build|gate-submit>  (ADR-271 flywheel-gate receipts from an AVO run summary)');
     console.log('       npx metaharness proxy <install|status|start|stop|enable|disable|path|login|logout>  (optional signed Cognitum Meta-Proxy sidecar)');
     console.log('       npx metaharness --from-existing [./path]');

@@ -118,4 +118,57 @@ describe('metaharness subcommand router (iter 117)', () => {
       await rm(dir, { recursive: true, force: true });
     }
   });
+
+  // Dream Cycle 2026-10-20 (generator-genome) — closes the 2026-08-27
+  // deferral: `doctor`/`diag`/etc. aren't real subcommands, so the router
+  // above returns null for them too, but unlike "unknown-name-here" they
+  // read as a command a user typed by habit — this guard stops the legacy
+  // scaffold from silently running (and exiting 0) for exactly that set.
+  for (const word of ['doctor', 'diag', 'audit', 'validate', 'compare', 'mcp-scan', 'help', 'version']) {
+    it(`reserved look-alike word "${word}" errors instead of silently scaffolding`, async () => {
+      const dir = await mkdtemp(join(tmpdir(), 'metaharness-reserved-'));
+      const origCwd = process.cwd();
+      try {
+        process.chdir(dir);
+        const r = await captureMain([word]);
+        expect(r.code).toBe(2);
+        expect(r.err).toMatch(/looks like a command, not a project name/);
+        expect(existsSync(join(dir, word))).toBe(false);
+      } finally {
+        process.chdir(origCwd);
+        await rm(dir, { recursive: true, force: true });
+      }
+    });
+  }
+
+  it('reserved look-alike word still scaffolds with --force (escape hatch preserved)', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'metaharness-reserved-force-'));
+    const origCwd = process.cwd();
+    try {
+      process.chdir(dir);
+      const r = await captureMain(['doctor', '--force']);
+      expect(r.code).toBe(0);
+      expect(existsSync(join(dir, 'doctor', 'package.json'))).toBe(true);
+    } finally {
+      process.chdir(origCwd);
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('a name that merely resembles a reserved word (not an exact match) still scaffolds normally', async () => {
+    // Exact-match only by design (see RESERVED_LOOKS_LIKE_A_COMMAND) — a
+    // Levenshtein/fuzzy guard risks false-positiving on legitimate project
+    // names (e.g. "doctor-bot"); confirmed scope stays narrow.
+    const dir = await mkdtemp(join(tmpdir(), 'metaharness-notreserved-'));
+    const origCwd = process.cwd();
+    try {
+      process.chdir(dir);
+      const r = await captureMain(['doctor-bot']);
+      expect(r.code).toBe(0);
+      expect(existsSync(join(dir, 'doctor-bot', 'package.json'))).toBe(true);
+    } finally {
+      process.chdir(origCwd);
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
 });
