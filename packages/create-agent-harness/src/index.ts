@@ -85,9 +85,19 @@ export const METAHARNESS_VERBS = [
 // doesn't recognize and `main()` falls through to the legacy bare-name
 // scaffold path with no reserved-word check. Deferred from 2026-08-27's
 // Dream Cycle ("doctor"/"diag" discovery) to this generator-genome slot.
+// Round 2 (same night, independent critic): the first 12 covered the
+// obvious diagnostic-sounding words, but left out 11 of the *generated
+// harness's own* real `harness <verb>` subcommands (subcommands.ts's
+// switch) — a user conflating `metaharness <verb>` with `harness <verb>`
+// hits the identical bug for any of these too; critic live-verified all 11
+// still silently scaffolded on the round-1 build. Folded in below rather
+// than spun into a separate follow-up, since it's the same fix, same file,
+// same guard, zero added risk.
 export const RESERVED_LOOKS_LIKE_A_COMMAND = new Set([
   'doctor', 'diag', 'audit', 'validate', 'compare', 'repo-scorecard',
   'mcp-scan', 'threat-model', 'sbom', 'secrets', 'help', 'version',
+  'verify', 'sign', 'federate', 'mcp', 'publish', 'upgrade', 'completions',
+  'analyze-repo', 'export-config', 'oia-manifest', 'plugin-init',
 ]);
 
 export const TEMPLATES = [

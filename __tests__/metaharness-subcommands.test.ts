@@ -124,7 +124,13 @@ describe('metaharness subcommand router (iter 117)', () => {
   // above returns null for them too, but unlike "unknown-name-here" they
   // read as a command a user typed by habit — this guard stops the legacy
   // scaffold from silently running (and exiting 0) for exactly that set.
-  for (const word of ['doctor', 'diag', 'audit', 'validate', 'compare', 'mcp-scan', 'help', 'version']) {
+  for (const word of [
+    'doctor', 'diag', 'audit', 'validate', 'compare', 'mcp-scan', 'help', 'version',
+    // Round 2 (independent critic, same night): the generated harness's own
+    // `harness <verb>` subcommands (subcommands.ts) hit the identical bug.
+    'verify', 'sign', 'federate', 'mcp', 'publish', 'upgrade', 'completions',
+    'analyze-repo', 'export-config', 'oia-manifest', 'plugin-init',
+  ]) {
     it(`reserved look-alike word "${word}" errors instead of silently scaffolding`, async () => {
       const dir = await mkdtemp(join(tmpdir(), 'metaharness-reserved-'));
       const origCwd = process.cwd();
