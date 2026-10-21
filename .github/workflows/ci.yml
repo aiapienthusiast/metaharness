@@ -336,10 +336,21 @@ jobs:
       - run: node scripts/dream-release.mjs pack
       - run: node scripts/dream-release.mjs smoke
       - run: node bench/dream/canonicalization.mjs
-      # Exercise the actual optional Candle integration changed by the ZIP security fix.
-      - run: cargo test -p poker-darwin --lib --features neural --jobs 2
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: dream-artifacts-${{ github.sha }}
           path: dist-release/
           if-no-files-found: error
+
+  dream-neural:
+    name: Dream integration / neural feature
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4
+        with:
+          toolchain: '1.99.1'
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32
+      # Explicit override: rust-toolchain.toml intentionally retains 1.88 for the default workspace.
+      - run: cargo +1.99.1 test -p poker-darwin --lib --features neural --jobs 2
