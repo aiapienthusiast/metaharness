@@ -4,8 +4,26 @@
 import { generateKeyPairSync, sign as edSign, verify as edVerify, createPublicKey, type KeyObject } from 'node:crypto';
 import type { PromotionReceipt, Signer } from './types.js';
 
-/** Deterministic, sorted-key JSON canonicalization — the exact bytes that get signed. */
+/** Deterministic, sorted-key JSON canonicalization — the exact bytes that get signed.
+ *
+ *  `JSON.stringify` collapses `NaN`, `Infinity`, and `-Infinity` to the 4-byte literal `null` (per the
+ *  ECMA-262 spec it implements) — so, naively, `canon(NaN) === canon(Infinity) === canon(-Infinity) ===
+ *  canon(null)`. RFC 8785 (JSON Canonicalization Scheme) forbids non-finite numbers for exactly this
+ *  reason — see also the Rust `json-canon` crate's own documented pitfall: a non-finite input "will
+ *  currently output 'null'". That collision is harmless for a plain hash, but every canon-EQUALITY check
+ *  in this package (`sealedFieldsAuthentic` below in replay.ts, `validAttestation` in
+ *  multigeneration-proof.ts) exists specifically to prove a live field was not changed after it was
+ *  signed — and a check of the form `canon(signed) !== canon(live)` cannot tell "live is still NaN" from
+ *  "live was silently changed to null/Infinity/-Infinity" if the collapse is left in place. Encode each
+ *  as a literal, unquoted token: none of `NaN`/`Infinity`/`-Infinity` is valid JSON syntax for any
+ *  string, number, boolean, or null, so none can collide with `JSON.stringify`'s output for any other
+ *  value canon() ever produces. Every existing finite number, string, boolean, null, array, and object
+ *  canonicalizes byte-identically to before this change. */
 export function canon(v: unknown): string {
+  if (typeof v === 'number' && !Number.isFinite(v)) {
+    if (Number.isNaN(v)) return 'NaN';
+    return v > 0 ? 'Infinity' : '-Infinity';
+  }
   if (v === null || typeof v !== 'object') return JSON.stringify(v);
   if (Array.isArray(v)) return `[${v.map(canon).join(',')}]`;
   const o = v as Record<string, unknown>;

@@ -508,6 +508,63 @@ describe('verifyReplayBundle — sealedFieldsAuthentic: signed scores must match
     expect(v.checks.sealedFieldsAuthentic).toBe(false); // bSpliced.receipt.payload.parents (['root-elsewhere']) != live parents (['a1'])
     expect(v.pass).toBe(false);
   });
+
+  it('canon() gives NaN, Infinity, -Infinity, and null four DISTINCT encodings — JSON.stringify collapses all four to "null"', () => {
+    expect(JSON.stringify(NaN)).toBe('null'); // the underlying collision this guards against
+    expect(JSON.stringify(Infinity)).toBe('null');
+    expect(JSON.stringify(-Infinity)).toBe('null');
+    const encodings = new Set([canon(NaN), canon(Infinity), canon(-Infinity), canon(null)]);
+    expect(encodings.size).toBe(4);
+  });
+
+  it('a live primaryDelta TAMPERED FROM NaN TO null after signing (no signing key needed) is caught by sealedFieldsAuthentic — the exact collision canon() closes', () => {
+    // An honest run can legitimately sign a non-finite primaryDelta (e.g. `candidate.primary - baseline.primary`
+    // where an Evaluator bug or degenerate suite produced a non-finite Score.primary upstream of the gate).
+    const baselineScore = S({ primary: 5 });
+    const candidateScore = S({ primary: 6, noopRate: 0.2 });
+    const signedPayload = {
+      kind: 'candidate', id: 'c1', target: 't', verdict: 'PROMOTED' as const, primaryDelta: NaN,
+      baselineScore, candidateScore, anchorScore: null, failureReasons: [],
+    };
+    const receipt = signer.sign(signedPayload);
+    const genuine: LineageCommit = {
+      id: 'c1', generation: 1, parents: ['root'], mutation: { target: 't', summary: 'adapt t' }, primaryDelta: NaN,
+      anchorScore: null, verdict: 'PROMOTED', failureReasons: [], receipt, createdAt: 'g1', baselineScore, candidateScore,
+    };
+    expect(verifyReplayBundle(bundleOf(genuine)).checks.sealedFieldsAuthentic).toBe(true); // untampered: passes
+
+    // An attacker with NO signing key — the receipt (and its signature) is left byte-for-byte untouched —
+    // rewrites only the LIVE, unsigned `primaryDelta` from NaN to null. Before this fix, `canon(NaN)` and
+    // `canon(null)` were both the 4-byte string "null", so `sealedFieldsAuthentic`'s
+    // `canon(payload.primaryDelta) !== canon(live.primaryDelta)` check could not tell them apart and
+    // reported the tampered commit as authentic.
+    const tampered: LineageCommit = { ...genuine, primaryDelta: null as unknown as number };
+    expect(verifyReceipt(tampered.receipt)).toBe(true); // the signature alone still verifies — that's the gap
+    const v = verifyReplayBundle(bundleOf(tampered));
+    expect(v.checks.sealedFieldsAuthentic).toBe(false);
+    expect(v.pass).toBe(false);
+  });
+
+  it('a live anchorScore TAMPERED FROM Infinity TO NaN after signing (no signing key needed) is caught', () => {
+    const baselineScore = S({ primary: 5 });
+    const candidateScore = S({ primary: 6, noopRate: 0.2 });
+    const signedPayload = {
+      kind: 'candidate', id: 'c1', target: 't', verdict: 'PROMOTED' as const, primaryDelta: 1,
+      baselineScore, candidateScore, anchorScore: Infinity, failureReasons: [],
+    };
+    const receipt = signer.sign(signedPayload);
+    const genuine: LineageCommit = {
+      id: 'c1', generation: 1, parents: ['root'], mutation: { target: 't', summary: 'adapt t' }, primaryDelta: 1,
+      anchorScore: Infinity, verdict: 'PROMOTED', failureReasons: [], receipt, createdAt: 'g1', baselineScore, candidateScore,
+    };
+    expect(verifyReplayBundle(bundleOf(genuine)).checks.sealedFieldsAuthentic).toBe(true);
+
+    const tampered: LineageCommit = { ...genuine, anchorScore: NaN };
+    expect(verifyReceipt(tampered.receipt)).toBe(true);
+    const v = verifyReplayBundle(bundleOf(tampered));
+    expect(v.checks.sealedFieldsAuthentic).toBe(false);
+    expect(v.pass).toBe(false);
+  });
 });
 
 describe('analyzeBundle — F-P2 mutation-effectiveness', () => {
