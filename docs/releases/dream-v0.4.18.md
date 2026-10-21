@@ -1,6 +1,6 @@
 # MetaHarness 0.4.18 — Dream integration and security fixes
 
-Packages: `metaharness@0.4.18`, `@metaharness/sdk@0.1.1`, and `@metaharness/flywheel@0.1.13`.
+Packages: `metaharness@0.4.18`, `@metaharness/sdk@0.1.1`, `@metaharness/flywheel@0.1.13`, and `@metaharness/agntcy@0.1.1`.
 
 Integrates Dream PRs #406, #410, #414, #419, #421, and #423 with review fixes:
 
@@ -11,6 +11,7 @@ Integrates Dream PRs #406, #410, #414, #419, #421, and #423 with review fixes:
 - Validate SDK names and duplicate registrations; omitted harness descriptions remain supported.
 - Reject invalid SWE-bench cost limits in all five solver entrypoints.
 - Update the test toolchain to Vitest 4.1.12 and regenerate the dependency lock. Pin Candle's upstream ZIP 9 fix at `70f72e9cfdbfc570846ca363ead2135394af3e9a` pending a registry release. The optional neural feature is qualified on Rust 1.99.1; default workspace builds retain Rust 1.88. No new vulnerability suppressions were added.
+- Align the AGNTCY Directory adapter with the SDK 1.8 constructor and include its source tests in the root suite. Shell-injection tests stub installation commands to avoid network/toolchain side effects.
 - Reduce allocations in object canonicalization. An offline receipt microbenchmark on Node 22.23.2 measured a 1.19× speedup over the hardened map/join implementation, with identical bytes (seven alternating samples of 50,000 iterations). This is a microbenchmark, not an end-to-end agent performance claim.
 
 The scoped Dream release workflow packs once, tests installed ESM/CJS and CLI entrypoints, publishes those exact tarballs, and verifies npm and GitHub download hashes. It requires successful CI and Security workflows on the merged source SHA. Darwin package publication remains separate.

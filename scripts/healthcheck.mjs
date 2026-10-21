@@ -120,6 +120,7 @@ const CHECKS = {
       '@metaharness/autogenous',
       // SDK now has its own patch-release cadence alongside the generator.
       '@metaharness/sdk',
+      '@metaharness/agntcy',
       '@metaharness/kernel',
       '@metaharness/host-claude-code',
       '@metaharness/host-codex',

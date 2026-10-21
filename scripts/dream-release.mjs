@@ -1,4 +1,4 @@
-// Exact-artifact release for the Dream integration's three public packages.
+// Exact-artifact release for the Dream integration's public packages.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
@@ -12,7 +12,7 @@ const run = (command, args, cwd = root) => execFileSync(command, args, { cwd, en
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const mode = process.argv[2] ?? 'pack';
 const manifestPath = join(out, 'dream-artifacts.json');
-const packages = ['sdk', 'flywheel', 'create-agent-harness'];
+const packages = ['sdk', 'flywheel', 'agntcy', 'create-agent-harness'];
 if (mode === 'pack') {
   mkdirSync(out, { recursive: true });
   const artifacts = packages.map(dir => {
@@ -32,6 +32,8 @@ if (mode === 'pack') {
     const smoke = `import assert from 'node:assert/strict';
       import { makeSigner, verifyReceipt, canon } from '@metaharness/flywheel';
       import { defineHarness } from '@metaharness/sdk';
+      import { oasfPublish } from '@metaharness/agntcy';
+      assert.equal(typeof oasfPublish.publishToDirectory, 'function');
       const receipt = makeSigner().sign({ primaryDelta: 0.5 });
       assert(verifyReceipt(JSON.parse(JSON.stringify(receipt))));
       assert.throws(() => canon(NaN), /non-finite/);
