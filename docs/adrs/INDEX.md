@@ -363,3 +363,11 @@ ADR-006 (memory + learning) and ADR-008 (drift detection) cut across all phases.
 ## What to do next
 
 If you are reading this with intent to start implementation, the gating ADR is **ADR-002 (Kernel boundary)**. Until that is accepted, every subsequent phase is blocked. ADR-002 is the highest-priority review.
+
+- [ADR-318: Multi-generation improvement proof protocol](./ADR-318-multi-generation-improvement-proof.md)
+
+- [ADR-319: Bounded contrastive harness development](./ADR-319-bounded-contrastive-development.md)
+
+- [ADR 320: Independent paired confirmation](./ADR-320-independent-contrastive-confirmation.md)
+
+- [ADR-321: One deadline for contrastive development and confirmation](./ADR-321-contrastive-total-deadline.md)

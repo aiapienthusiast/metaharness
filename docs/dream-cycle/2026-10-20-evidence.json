@@ -1,0 +1,83 @@
+{
+  "date": "2026-10-20",
+  "deep_surface": "generator-genome",
+  "scan_surfaces": ["router", "turn-credit"],
+  "session_commit_base": "e0dfd44da72b7adfb7c57fdd42d124be58ed7086",
+  "issue": 420,
+  "pull_request": null,
+  "classification": "MEASUREMENT",
+  "prior_disclosure": {
+    "type": "OBSERVATION",
+    "text": "2026-08-27's Dream Cycle (docs/dream-cycle/2026-08-27-gist.md, lines ~28-38) found `metaharness doctor`/`diag` silently scaffold instead of erroring, and explicitly flagged it 'a candidate for a future generator-genome or CLI-UX night' without fixing it. Checked LEDGER.md's generator-genome rows for 09-10, 09-15, 09-20, 09-30, 10-05, 10-10, 10-15: all are score.ts/genome-scorers.ts scoring-function bugs; none touched CLI argument parsing. 54 days open before tonight."
+  },
+  "hypothesis": {
+    "type": "HYPOTHESIS",
+    "text": "Given npx metaharness <word> where <word> is a word a CLI user reasonably expects to be a diagnostic/info subcommand, when the candidate guard is applied, then the CLI prints an error and exits 2 instead of silently scaffolding and exiting 0, subject to: (a) --force still scaffolds a project literally named one of these words; (b) the pre-existing fallback test for genuinely novel names stays green unchanged; (c) the known-verb list is single-sourced for both the guard's message and the usage text."
+  },
+  "round_1": {
+    "type": "MEASUREMENT",
+    "words_reproduced_live": ["doctor", "diag", "audit", "validate", "compare", "repo-scorecard", "mcp-scan", "threat-model", "sbom", "secrets", "help", "version"],
+    "baseline_command": "git stash push -- __tests__/metaharness-subcommands.test.ts packages/create-agent-harness/src/index.ts; rebuild; npx vitest run __tests__/metaharness-subcommands.test.ts",
+    "baseline_result": "8 passed, 9 failed -- 8 new reserved-word assertions fail non-vacuously (expected +0 to be 2), plus 1 pre-existing unrelated failure",
+    "candidate_result": "16 passed, 1 failed (same pre-existing failure, byte-identical)",
+    "commit": "366f0ef"
+  },
+  "independent_critic_round_1": {
+    "type": "DECISION",
+    "verdict": "ACCEPT-WITH-CAVEATS",
+    "method": "Fresh subagent; reverted both files to HEAD~1 independently, rebuilt, ran full suite itself (322/323 files baseline vs candidate), diffed sorted FAIL-line sets -- byte-identical, confirming 0 regressions independently rather than taking the session's word for it. Also live-tested 11 additional plausible words against the pre-candidate and candidate binaries.",
+    "caveats": [
+      "Reserved list real but incomplete -- 11 real `harness <verb>` subcommands (verify, sign, federate, mcp, publish, upgrade, completions, analyze-repo, export-config, oia-manifest, plugin-init) live-verified still silently scaffolding on round 1's build.",
+      "--force now carries two meanings (pre-existing 'overwrite target dir' plus new 'scaffold this reserved word anyway') -- narrow but real risk of an unintended silent overwrite.",
+      "Guard runs before the --wizard block, which can later set args.name interactively, bypassing the guard -- low real-world risk, real coverage gap."
+    ]
+  },
+  "round_2": {
+    "type": "MEASUREMENT",
+    "trigger": "independent_critic_round_1 caveat 1 -- closed same night, same file, zero added risk",
+    "words_added": ["verify", "sign", "federate", "mcp", "publish", "upgrade", "completions", "analyze-repo", "export-config", "oia-manifest", "plugin-init"],
+    "candidate_result": "27 passed, 1 failed (same pre-existing failure)",
+    "full_suite_sweep": "root __tests__/ + packages/create-agent-harness/__tests__/ (323 files; 3313 tests round 1, 3324 round 2) -- identical 22-failure set on baseline and candidate, both rounds. 0 regressions.",
+    "typecheck": "clean (npx tsc --noEmit, packages/create-agent-harness)",
+    "full_build": "npm run build -- build-ordered DONE, exit 0, all 4 phases clean (JS-only; wasm-pack unavailable in this sandbox -- recorded degradation, unrelated to this candidate)",
+    "live_cli_smoke_test": "metaharness doctor and metaharness verify both now exit 2 with no directory created; previously both exited 0 and scaffolded",
+    "commit": "b97cb25"
+  },
+  "darwin": {
+    "type": "DECISION",
+    "status": "not_applicable",
+    "reason": "Reserved-word guard in CLI argument parsing has no tunable parameter space -- no routing weight, topology, or scorer coefficient; not one of ADR-071's seven approved mutation surfaces. Same classification as 2026-10-19's SDK-validation fix (#419)."
+  },
+  "flywheel": {
+    "type": "DECISION",
+    "status": "not_applicable",
+    "reason": "No corpus, no LLM eval needed -- deterministic CLI argument-parsing fix, fully verified by direct unit/integration test + live CLI smoke test."
+  },
+  "reward_hack_check": {
+    "type": "OBSERVATION",
+    "text": "Independent critic read the full diff twice: no pre-existing test weakened, no gold/expected value changed, no threshold altered, no test skipped. The only non-additive-test change is 4 new usage-text lines, verified against runMetaHarnessSubcommand's real switch cases (which do have weight-eft/redblue/flywheel/turn-credit) -- documents reality, does not hide anything."
+  },
+  "security_review": {
+    "type": "OBSERVATION",
+    "text": "Change confined to packages/create-agent-harness/src/index.ts, a synchronous argument-parsing path with no new I/O/network/eval. Strictly narrows accepted behavior (blocks an unintended filesystem write that previously happened silently); never loosens an existing check. Reduces attack/confusion surface rather than adding to it."
+  },
+  "promotion_gate_self_check": {
+    "evaluation_complete": true,
+    "effect_positive": true,
+    "significance_sufficient": true,
+    "no_material_regression": true,
+    "tests_green": "19 new/changed assertions pass; 1 pre-existing unrelated failure unchanged",
+    "reward_hack_clear": true,
+    "critic_clear": "ACCEPT-WITH-CAVEATS, 3 non-blocking (1 closed same night in round 2, 2 disclosed)",
+    "witness_valid": "see gist Witness section",
+    "receipt_reproducible": true
+  },
+  "disclosed_not_fixed_followups": [
+    "--force flag now carries two overloaded meanings (overwrite-existing-dir vs. scaffold-reserved-word-anyway) -- a distinct flag would be safer, not introduced tonight to keep the diff minimal.",
+    "The reserved-word guard runs before the --wizard block and does not re-check args.name after the wizard sets it interactively.",
+    "Pre-existing unrelated test failure: __tests__/metaharness-subcommands.test.ts > 'bare name (back-compat)' expects exit 2 on empty argv but gets 0 -- stale test predating #73's intentional bare-invocation-exits-0 change; not touched tonight.",
+    "SCAN (router): index.ts's clearing.sort((a,b)=>a.costPerMTok-b.costPerMTok) and train.ts (x2) never validate costPerMTok/quality for finiteness -- a single NaN candidate silently violates the documented cheapest-candidate contract. No test exercises non-finite cost/quality.",
+    "SCAN (turn-credit): one NaN/-Infinity evidence value poisons accumulated/mean/variance for every subsequent turn, not just the bad one; clip() has no isNaN guard; receipt.ts's canon() JSON.stringifies NaN to the string 'null', so a corrupted weight is signed into the 'tamper-evident' receipt as a clean null. Untested at this boundary."
+  ],
+  "final_verdict": "ACCEPT-WITH-CAVEATS"
+}

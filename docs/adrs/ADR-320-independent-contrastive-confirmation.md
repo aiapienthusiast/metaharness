@@ -1,7 +1,11 @@
 # ADR 320: Independent paired confirmation
 
-Status: accepted for the optional Darwin contrastive API
+**Status**: accepted for the optional Darwin contrastive API
 Date: 2026-10-16
+
+## Context
+
+Development selection requires an independent check on unseen tasks.
 
 ## Decision and value
 
@@ -46,3 +50,7 @@ This is a small public-data pilot. It does not prove private transfer, resistanc
 ## Rollback and remaining authority
 
 Pin @metaharness/darwin to 0.11.0 to omit the new API. Existing evolve and runContrastive defaults do not change. The deployment owner controls secrets, execution isolation, heldout data custody, repeated-testing policy and production releases.
+
+## Consequences
+
+The implementation adds explicit evidence and validation requirements. Its results remain bounded by the experimental scope and limitations described above; they do not authorize automatic production promotion.

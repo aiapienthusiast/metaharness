@@ -1,8 +1,8 @@
 # ADR-319: Bounded contrastive harness development
 
-Status: accepted for an opt-in experimental API. Date: 2026-10-16.
+**Status**: accepted for an opt-in experimental API. Date: 2026-10-16.
 
-## Outcome and scope
+## Context
 
 Add `@metaharness/darwin/contrastive`: two evidence-scoped editors, actual candidate probes, selective composition, bounded experiment memory and a caller-owned editor bridge. Existing Darwin CLI/evolve behavior is unchanged. The business goal is fewer repeated failures without paying for exploration on every task.
 
@@ -10,7 +10,7 @@ Inputs are a declarative harness, task, environment, immutable capability envelo
 
 The design is an original MIT implementation informed by [Harness²](https://arxiv.org/abs/2610.14224) and its [reference release](https://github.com/google-research/harness2). No upstream source was copied. Its similarly named Meta-Harness baseline is a separate project.
 
-## Control flow
+## Decision: control flow
 
 1. Validate and freeze all serializable inputs. Reject a surface-independent evaluator.
 2. Reserve the complete per-call ceiling before a baseline execution.
@@ -50,3 +50,7 @@ The baseline and sampling controls use the same synthetic task generator. Equal 
 ## Release and rollback
 
 Release this additive API as `@metaharness/darwin@0.11.0`, with the existing default path preserved. Publish only the reviewed tarball after type checks, package regression tests, adversarial checks, production dependency audit and fresh-install smoke. Bind the release evidence to its source commit and npm integrity. Rollback is version pinning to `0.10.3`; no storage migration or production promotion occurs automatically.
+
+## Consequences
+
+The implementation adds explicit evidence and validation requirements. Its results remain bounded by the experimental scope and limitations described above; they do not authorize automatic production promotion.
