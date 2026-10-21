@@ -26,6 +26,8 @@ if (mode === 'pack') {
   const { artifacts } = JSON.parse(readFileSync(manifestPath, 'utf8'));
   const dir = mkdtempSync(join(tmpdir(), 'dream-installed-'));
   try {
+    // AGNTCY's generated protobuf dependencies are served by the public Buf registry.
+    writeFileSync(join(dir, '.npmrc'), '@buf:registry=https://buf.build/gen/npm/v1/\n');
     writeFileSync(join(dir, 'package.json'), '{"private":true,"type":"module"}\n');
     for (const a of artifacts) assert.equal(hash(readFileSync(join(out, a.file))), a.sha256);
     run(npm, ['install', '--ignore-scripts', '--no-audit', '--no-fund', ...artifacts.map(a => join(out, a.file))], dir);

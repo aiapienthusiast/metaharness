@@ -14,6 +14,8 @@ Integrates Dream PRs #406, #410, #414, #419, #421, and #423 with review fixes:
 - Align the AGNTCY Directory adapter with the SDK 1.8 constructor and include its source tests in the root suite. Shell-injection tests stub installation commands to avoid network/toolchain side effects.
 - Reduce allocations in object canonicalization. An offline receipt microbenchmark on Node 22.23.2 measured a 1.19× speedup over the hardened map/join implementation, with identical bytes (seven alternating samples of 50,000 iterations). This is a microbenchmark, not an end-to-end agent performance claim.
 
+Consumers installing `@metaharness/agntcy` must configure its generated protobuf dependency scope before installation: `npm config set @buf:registry https://buf.build/gen/npm/v1/ --location=project`. The installed-artifact smoke test uses this same public registry configuration.
+
 The scoped Dream release workflow packs once, tests installed ESM/CJS and CLI entrypoints, publishes those exact tarballs, and verifies npm and GitHub download hashes. It requires successful CI and Security workflows on the merged source SHA. Darwin package publication remains separate.
 
 Reproduce: `npm ci --ignore-scripts`, `npm run build`, `npx vitest run --maxWorkers=2`, `node --test packages/darwin-mode/bench/swebench/cost-guard.test.mjs`, `npm audit`, `node bench/dream/canonicalization.mjs`, `node scripts/dream-release.mjs pack`, and `node scripts/dream-release.mjs smoke`.
