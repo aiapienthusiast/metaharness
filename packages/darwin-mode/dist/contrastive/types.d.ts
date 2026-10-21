@@ -32,6 +32,7 @@ export interface Budget {
     /** Budget amounts use exact nanodollar precision within safe integer units. */
     readonly maxUsd: number;
     readonly maxCalls: number;
+    /** Total wall-clock deadline for the complete round, including all adapter stages. */
     readonly timeoutMs: number;
     readonly probeUsd: number;
     readonly proposeUsd: number;

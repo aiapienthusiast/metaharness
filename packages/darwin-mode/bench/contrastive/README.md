@@ -46,3 +46,14 @@ Latency includes in-process adapters, validation, hashing, scheduling and receip
 `synthetic-adapter.mjs` is a minimal adapter example. Replace the proposer and evaluator with trusted real task adapters for a live pilot. The host must enforce its provider cost ceilings, cancellation and tool capabilities. Keep production promotion and independent acceptance outside the editor.
 
 Same-process closures separate benchmark roles; they are not an isolation boundary against malicious adapters. The holdout shares the development distribution. No external transfer or representative real task superiority is established.
+
+## Three-seed suite and total deadline regression
+
+```sh
+node packages/darwin-mode/bench/contrastive/run-suite.mjs > /tmp/contrastive-suite.json
+node packages/darwin-mode/bench/contrastive/deadline.mjs > /tmp/contrastive-deadline.json
+```
+
+The suite runs 100 heldout synthetic parser inputs for each of three seeds and 32 sampling controls per seed. These are variations within one family, not 300 independent professional tasks. Full reports, receipts and provenance remain in the output. The suite does not assert superiority over the retry control.
+
+The deadline benchmark runs cooperative delayed adapters with one 100ms budget. An optional second CLI argument names a local prior engine module to measure the earlier per-call behavior. Record that module's source commit separately. Lower elapsed time here means earlier termination of incomplete work, not inference acceleration. See ADR-321 for the execution boundary and host responsibilities.

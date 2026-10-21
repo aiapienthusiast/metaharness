@@ -13,6 +13,7 @@ class Stop extends Error {
  * No production promotion, code evaluation, network, or persistence occurs here.
  */
 export async function runContrastive(options) {
+    const roundStarted = performance.now();
     if (options.evaluator?.surfaceAware !== true || typeof options.evaluator.probe !== 'function' ||
         typeof options.proposer?.propose !== 'function' ||
         (options.composer && typeof options.composer.compose !== 'function'))
@@ -33,6 +34,8 @@ export async function runContrastive(options) {
     if (context.library.tenantId !== context.tenantId || context.library.projectId !== context.projectId ||
         !Array.isArray(context.library.entries) || context.library.entries.length > 32)
         throw new Error('Invalid scoped library');
+    // One wall-clock budget for the complete round, not a fresh timeout per effect.
+    const deadline = roundStarted + budget.timeoutMs;
     const baselineDigest = digestDocument(baseline);
     const receipts = [];
     const cache = new Map();
@@ -52,6 +55,10 @@ export async function runContrastive(options) {
     };
     const invoke = async (kind, ceiling, callback, validate, candidateDigest) => {
         const started = performance.now();
+        if (started >= deadline) {
+            receipt(kind, 'timeout', 0, 0, started, candidateDigest);
+            throw new Stop('timeout');
+        }
         const units = moneyUnits(ceiling);
         if (calls >= budget.maxCalls || units > maxUnits - reservedUnits) {
             receipt(kind, 'budget', 0, 0, started, candidateDigest);
@@ -65,12 +72,14 @@ export async function runContrastive(options) {
         let timer;
         let actual = ceiling;
         try {
-            const deadline = started + budget.timeoutMs;
             const timeout = new Promise((_, reject) => {
-                timer = setTimeout(() => { controller.abort(); reject(new Stop('timeout')); }, budget.timeoutMs);
+                timer = setTimeout(() => { controller.abort(); reject(new Stop('timeout')); }, Math.max(0, deadline - performance.now()));
             });
-            const operation = Promise.resolve().then(() => callback(Object.freeze({ ...context,
-                signal: controller.signal, ceilingUsd: ceiling })));
+            const operation = Promise.resolve().then(() => {
+                if (controller.signal.aborted || performance.now() >= deadline)
+                    throw new Stop('timeout');
+                return callback(Object.freeze({ ...context, signal: controller.signal, ceilingUsd: ceiling }));
+            });
             let raw;
             try {
                 raw = await Promise.race([operation, timeout]);
@@ -93,6 +102,9 @@ export async function runContrastive(options) {
             catch {
                 throw new Stop('invalid');
             }
+            // Validation and snapshotting also consume the same round budget.
+            if (performance.now() >= deadline)
+                throw new Stop('timeout');
             reportedUsd += actual;
             receipt(kind, 'success', ceiling, actual, started, candidateDigest);
             return value;
@@ -111,6 +123,12 @@ export async function runContrastive(options) {
     };
     const execute = async (kind, candidate) => {
         const candidateDigest = digestDocument(candidate);
+        // Cache hits must not bypass an expired round deadline.
+        const checkedAt = performance.now();
+        if (checkedAt >= deadline) {
+            receipt(kind, 'timeout', 0, 0, checkedAt, candidateDigest);
+            throw new Stop('timeout');
+        }
         const cached = cache.get(candidateDigest);
         if (cached) {
             deduplicated++;
