@@ -27,6 +27,10 @@ export function canon(v: unknown, depth = 0): string {
   if (depth > MAX_CANON_DEPTH) {
     throw new Error(`canon: value exceeds max nesting depth (${MAX_CANON_DEPTH}) — refusing to canonicalize`);
   }
+  // Non-finite numbers collapse to null during JSON transport; never sign that ambiguity.
+  if (typeof v === 'number' && !Number.isFinite(v)) {
+    throw new Error('canon: non-finite numbers cannot be represented in signed JSON');
+  }
   if (v === null || typeof v !== 'object') return JSON.stringify(v);
   if (Array.isArray(v)) return `[${v.map((x) => canon(x, depth + 1)).join(',')}]`;
   const o = v as Record<string, unknown>;
