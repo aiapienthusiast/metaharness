@@ -34,7 +34,14 @@ export function canon(v: unknown, depth = 0): string {
   if (v === null || typeof v !== 'object') return JSON.stringify(v);
   if (Array.isArray(v)) return `[${v.map((x) => canon(x, depth + 1)).join(',')}]`;
   const o = v as Record<string, unknown>;
-  return `{${Object.keys(o).sort().map((k) => `${JSON.stringify(k)}:${canon(o[k], depth + 1)}`).join(',')}}`;
+  // Build directly: avoid a callback and a second array allocation per signed object.
+  let encoded = '{';
+  let separator = '';
+  for (const k of Object.keys(o).sort()) {
+    encoded += `${separator}${JSON.stringify(k)}:${canon(o[k], depth + 1)}`;
+    separator = ',';
+  }
+  return `${encoded}}`;
 }
 
 /** `canon(a) === canon(b)`, except a value too deep to canonicalize counts as NOT equal rather than

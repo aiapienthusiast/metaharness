@@ -125,7 +125,7 @@ export function defineHarness(def: {
   mcpServers?: readonly McpServerDef[];
 }): HarnessDef {
   ensureKebab(def.name, 'harness');
-  if (!def.description || def.description.trim().length === 0) {
+  if (def.description !== undefined && (typeof def.description !== 'string' || def.description.trim().length === 0)) {
     throw new Error(`harness "${def.name}" requires a non-empty description`);
   }
   // Detect name collisions across agents/skills/tools/mcpServers.

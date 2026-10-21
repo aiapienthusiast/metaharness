@@ -271,3 +271,7 @@ is not claimed. A normal shutdown still closes every owned scorecard.
 * [Tycho public-set results](https://github.com/NIMI-research/Tycho)
 * [ChatGPT Developer Mode](https://developers.openai.com/api/docs/guides/developer-mode)
 * [MCP Apps UI resources](https://developers.openai.com/plugins/build/chatgpt-ui)
+
+## Consequences
+
+The implementation adds explicit evidence and validation requirements. Its results remain bounded by the experimental scope and limitations described above; they do not authorize automatic production promotion.

@@ -666,7 +666,8 @@ SOFTWARE.
 `;
 }
 
-export async function scaffold(opts: ScaffoldOptions): Promise<ScaffoldResult> {
+/** Render the same host and security overlays for creation and upgrade. */
+export async function renderScaffold(opts: ScaffoldOptions) {
   const nameCheck = validateHarnessName(opts.name);
   if (!nameCheck.valid) {
     throw new Error(`invalid harness name: ${nameCheck.reason}`);
@@ -772,6 +773,17 @@ export async function scaffold(opts: ScaffoldOptions): Promise<ScaffoldResult> {
         mcpRegistered = !!(settings.mcpServers && Object.keys(settings.mcpServers).length > 0);
       } catch { /* unparseable settings.json: treat as not registered, nothing to do */ }
     }
+    // Native host formats also register MCP without a Claude settings file.
+    mcpRegistered ||= rendered.some(file => {
+      if (file.path === '.codex/config.toml') return /^\[mcp_servers\./m.test(file.content);
+      if (file.path.startsWith('optional-mcps/') && file.path.endsWith('.json')) return true;
+      if (!['.openclaw/openclaw.json', '.vscode/mcp.json', '.opencode/opencode.json'].includes(file.path)) return false;
+      try {
+        const config = JSON.parse(file.content);
+        const servers = config.mcp?.servers ?? config.mcpServers ?? config.servers ?? config.mcp;
+        return !!servers && Object.keys(servers).length > 0;
+      } catch { return false; }
+    });
     if (mcpRegistered && !rendered.some(r => r.path === '.harness/mcp-policy.json')) {
       rendered.push({
         path: '.harness/mcp-policy.json',
@@ -846,15 +858,22 @@ export async function scaffold(opts: ScaffoldOptions): Promise<ScaffoldResult> {
   // avoiding the implicit database reopen and Sybil-prone caller-id patterns
   // found during the discovery benchmark.
   if (opts.fieldMemory === true) {
+    integrateFieldMemory(rendered);
+  }
+
+  return { rendered, vars, hostSet };
+}
+
+export async function scaffold(opts: ScaffoldOptions): Promise<ScaffoldResult> {
+  if (opts.fieldMemory === true) {
     const existingModule = join(opts.targetDir, ...FIELD_MEMORY_MODULE_PATH.split('/'));
     if (existsSync(existingModule)) {
       throw new Error(
         `--field-memory refuses to overwrite existing ${FIELD_MEMORY_MODULE_PATH}`,
       );
     }
-    integrateFieldMemory(rendered);
   }
-
+  const { rendered, vars, hostSet } = await renderScaffold(opts);
   const fileMap = asFileMap(rendered);
 
   // iter 58: stamp kernel_version at scaffold time (ADR-027 diagnostic).
@@ -864,6 +883,7 @@ export async function scaffold(opts: ScaffoldOptions): Promise<ScaffoldResult> {
     meta: KERNEL_VERSION ? { kernel_version: KERNEL_VERSION } : {},
   });
   manifest.vars = vars;
+  manifest.features = { darwin: opts.darwin !== false, sessions: opts.sessions === true };
   manifest.hosts = hostSet; // GH #10: full host set, not just the primary
   if (opts.fieldMemory === true) {
     manifest.field_memory = fieldMemoryManifest();
@@ -1096,7 +1116,7 @@ export async function main(argv: string[]): Promise<number> {
 
   // See RESERVED_LOOKS_LIKE_A_COMMAND above. `--force` still lets someone
   // scaffold a project literally named e.g. "doctor" on purpose.
-  if (args.name && !args.force && RESERVED_LOOKS_LIKE_A_COMMAND.has(args.name)) {
+  if (first !== 'new' && args.name && !args.force && RESERVED_LOOKS_LIKE_A_COMMAND.has(args.name)) {
     console.error(`"${args.name}" looks like a command, not a project name — it is not a recognized metaharness subcommand.`);
     console.error(`Known subcommands: ${METAHARNESS_VERBS.join(', ')}`);
     console.error(`To scaffold a project literally named "${args.name}" anyway, re-run with --force.`);

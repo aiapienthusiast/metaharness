@@ -52,7 +52,7 @@ const PHASES = [
   // Phase 4: vertical-trading (depends on vertical-base), the ARC AVO
   // controlled-ablation runner (depends on arc-agi-3), and bench (depends on
   // EVERY host adapter for the cross-host benchmark in iter 39's host-bench.ts).
-  ['vertical-trading', 'arc-agi-3-bench', 'bench'],
+  ['vertical-trading', 'arc-agi-3-bench', 'bench', 'agent-harness-generator-lib'],
 ];
 
 const ROOT = process.cwd();

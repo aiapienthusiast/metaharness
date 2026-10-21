@@ -139,8 +139,8 @@ describe('defineHarness', () => {
     expect(() => defineHarness({ name: 'BadName', description: 'd' })).toThrow(/kebab-case/);
   });
 
-  it('rejects missing or empty description', () => {
-    expect(() => defineHarness({ name: 'h' })).toThrow(/description/);
+  it('preserves optional descriptions but rejects explicitly empty descriptions', () => {
+    expect(defineHarness({ name: 'h' }).description).toBeUndefined();
     expect(() => defineHarness({ name: 'h', description: '' })).toThrow(/description/);
     expect(() => defineHarness({ name: 'h', description: '   ' })).toThrow(/description/);
   });

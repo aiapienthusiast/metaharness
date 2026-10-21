@@ -70,6 +70,9 @@ describe('formatDiagReport', () => {
   it('exits 0 + PASS line on match', () => {
     const r = diag.formatDiagReport({
       dir: '/x',
+      backendReasons: {},
+      requestedBackend: null,
+      kernelBackend: undefined,
       surface: 'cli',
       manifestKernelVersion: '0.1.0',
       localKernelVersion: '0.1.0',
@@ -83,6 +86,9 @@ describe('formatDiagReport', () => {
   it('exits 1 + FAIL line + actionable on major-diff', () => {
     const r = diag.formatDiagReport({
       dir: '/x',
+      backendReasons: {},
+      requestedBackend: null,
+      kernelBackend: undefined,
       surface: 'cli',
       manifestKernelVersion: '0.1.0',
       localKernelVersion: '1.0.0',
@@ -97,6 +103,9 @@ describe('formatDiagReport', () => {
   it('exits 1 on minor-diff', () => {
     const r = diag.formatDiagReport({
       dir: '/x',
+      backendReasons: {},
+      requestedBackend: null,
+      kernelBackend: undefined,
       surface: 'cli',
       manifestKernelVersion: '0.1.0',
       localKernelVersion: '0.2.0',
@@ -109,6 +118,9 @@ describe('formatDiagReport', () => {
   it('exits 0 on patch-diff (WARN, not FAIL)', () => {
     const r = diag.formatDiagReport({
       dir: '/x',
+      backendReasons: {},
+      requestedBackend: null,
+      kernelBackend: undefined,
       surface: 'cli',
       manifestKernelVersion: '0.1.0',
       localKernelVersion: '0.1.5',
@@ -137,6 +149,9 @@ describe('generator-version skew (iter 71)', () => {
   it('formatDiagReport surfaces a manifest generator line even on match', () => {
     const r = diag.formatDiagReport({
       dir: '/x',
+      backendReasons: {},
+      requestedBackend: null,
+      kernelBackend: undefined,
       surface: 'cli',
       manifestKernelVersion: '0.1.0',
       localKernelVersion: '0.1.0',
@@ -158,6 +173,9 @@ describe('generator-version skew (iter 71)', () => {
     // skew is informational, not blocking.
     const r = diag.formatDiagReport({
       dir: '/x',
+      backendReasons: {},
+      requestedBackend: null,
+      kernelBackend: undefined,
       surface: 'cli',
       manifestKernelVersion: '0.1.0',
       localKernelVersion: '0.1.0',
@@ -226,7 +244,7 @@ describe('--bundle output (iter 90 MILESTONE)', () => {
       expect(Object.keys(b.harness.rufloDeps)).toContain('@metaharness/kernel');
       // manifest present + read
       expect(b.manifest.present).toBe(true);
-      expect((b.manifest.content as any).meta.kernel_version).toBe('0.1.0');
+      expect((b.manifest.content as any).meta.kernel_version).toBe(b.diag.localKernelVersion);
       // harnessFiles enumerates .harness/* (iter 90 fix — readdirSync
       // import works in ESM context, not require)
       expect(b.harnessFiles).toContain('.harness/manifest.json');

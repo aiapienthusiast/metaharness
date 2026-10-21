@@ -387,6 +387,16 @@ export function verifyMultiGenerationEvidence(
     previousChildImprover = g.childImprover;
   }
 
+  // Runs unconditionally, before proof classification, on the full untrusted `e` — unlike the comparisons
+  // above, there is no existing failure reason a thrown error could fall back to, so one is added here.
+  let evidenceDigest: string;
+  try {
+    evidenceDigest = multiGenerationEvidenceDigest(e);
+  } catch {
+    failures.push('undigestable_evidence');
+    evidenceDigest = `sha256:${'0'.repeat(64)}`;
+  }
+
   const structuralFailures = failures.filter((f) =>
     !f.includes('insufficient_trusted_reviewers') &&
     !f.includes('improver_yield_not_improved')
@@ -402,15 +412,6 @@ export function verifyMultiGenerationEvidence(
     proofClass = allSynthetic ? 'SYNTHETIC_RECURSIVE_IMPROVER' : 'BOUNDED_RECURSIVE_IMPROVER';
   } else if (structuralPass) proofClass = 'STRUCTURAL_MULTI_GENERATION';
 
-  // Runs unconditionally, after every other check, on the full untrusted `e` — unlike the comparisons
-  // above, there is no existing failure reason a thrown error could fall back to, so one is added here.
-  let evidenceDigest: string;
-  try {
-    evidenceDigest = multiGenerationEvidenceDigest(e);
-  } catch {
-    failures.push('undigestable_evidence');
-    evidenceDigest = `sha256:${'0'.repeat(64)}`;
-  }
 
   return {
     pass: failures.length === 0,
