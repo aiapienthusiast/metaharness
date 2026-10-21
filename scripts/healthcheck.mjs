@@ -118,6 +118,8 @@ const CHECKS = {
       // @metaharness/autogenous is the standalone governed policy-evolution adapter
       // for ruvnet/autogenous; it follows Autogenous' own release cadence.
       '@metaharness/autogenous',
+      // SDK now has its own patch-release cadence alongside the generator.
+      '@metaharness/sdk',
       '@metaharness/kernel',
       '@metaharness/host-claude-code',
       '@metaharness/host-codex',

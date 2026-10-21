@@ -37,6 +37,7 @@ jobs:
           [[ "$RELEASE_TAG" =~ ^dream-v[0-9]+\.[0-9]+\.[0-9]+$ ]]
           test "$(git rev-parse HEAD)" = "$(git rev-parse "$RELEASE_TAG^{commit}")"
           git merge-base --is-ancestor HEAD origin/main
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const p=JSON.parse(readFileSync('packages/create-agent-harness/package.json')); if(process.env.RELEASE_TAG !== 'dream-v'+p.version) throw Error('tag/package version mismatch');"
           for workflow in ci.yml security.yml; do
             conclusion=$(gh run list --workflow "$workflow" --commit "$(git rev-parse HEAD)" --event push --limit 1 --json conclusion --jq '.[0].conclusion')
             test "$conclusion" = success
