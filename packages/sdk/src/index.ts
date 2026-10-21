@@ -91,6 +91,7 @@ export function defineSkill(def: { name: string; description: string; body: stri
 
 export function defineTool(def: { name: string; server: string; description: string; inputSchema: Record<string, unknown>; handler?: (args: Record<string, unknown>) => Promise<unknown> }): ToolDef {
   if (!def.name) throw new Error('tool name is required');
+  ensureKebab(def.name, 'tool');
   if (!def.server) throw new Error(`tool "${def.name}" requires a server`);
   if (!def.description) throw new Error(`tool "${def.name}" requires a description`);
   if (!def.inputSchema || typeof def.inputSchema !== 'object') {
@@ -107,6 +108,7 @@ export function defineHook(def: HookDef): HookDef {
 
 export function defineMcpServer(def: { name: string; command?: readonly string[]; url?: string; env?: ReadonlyArray<readonly [string, string]> }): McpServerDef {
   if (!def.name) throw new Error('mcp server name is required');
+  ensureKebab(def.name, 'mcp server');
   if (!def.command && !def.url) throw new Error(`mcp server "${def.name}" requires either command or url`);
   if (def.command && def.url) throw new Error(`mcp server "${def.name}" cannot have both command and url`);
   return Object.freeze({ ...def });
@@ -123,7 +125,10 @@ export function defineHarness(def: {
   mcpServers?: readonly McpServerDef[];
 }): HarnessDef {
   ensureKebab(def.name, 'harness');
-  // Detect name collisions across agents/skills/tools.
+  if (!def.description || def.description.trim().length === 0) {
+    throw new Error(`harness "${def.name}" requires a non-empty description`);
+  }
+  // Detect name collisions across agents/skills/tools/mcpServers.
   const agentNames = new Set<string>();
   for (const a of def.agents ?? []) {
     if (agentNames.has(a.name)) throw new Error(`agent name collision: ${a.name}`);
@@ -133,6 +138,16 @@ export function defineHarness(def: {
   for (const s of def.skills ?? []) {
     if (skillNames.has(s.name)) throw new Error(`skill name collision: ${s.name}`);
     skillNames.add(s.name);
+  }
+  const toolNames = new Set<string>();
+  for (const t of def.tools ?? []) {
+    if (toolNames.has(t.name)) throw new Error(`tool name collision: ${t.name}`);
+    toolNames.add(t.name);
+  }
+  const mcpServerNames = new Set<string>();
+  for (const m of def.mcpServers ?? []) {
+    if (mcpServerNames.has(m.name)) throw new Error(`mcp server name collision: ${m.name}`);
+    mcpServerNames.add(m.name);
   }
   return Object.freeze({
     name: def.name,
