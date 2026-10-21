@@ -51,7 +51,7 @@ jobs:
           npm ci --ignore-scripts
           npm run build
           npx vitest run --maxWorkers=2
-          node --test bench/swebench/cost-guard.test.mjs
+          node --test packages/darwin-mode/bench/swebench/cost-guard.test.mjs
           npm audit --audit-level=moderate
           node scripts/dream-release.mjs pack
           node scripts/dream-release.mjs smoke

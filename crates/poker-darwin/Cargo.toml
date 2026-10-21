@@ -54,8 +54,8 @@ thiserror = { workspace = true }
 ruvector-core = { version = "0.1.31", default-features = false, features = ["hnsw", "memory-only", "parallel"], optional = true }
 # Pinned ZIP 9 security fix: huggingface/candle#4041. Return to a registry release
 # once it includes this commit; both crates must use the same source.
-candle-core = { git = "https://github.com/huggingface/candle", rev = "70f72e9cfdbfc570846ca363ead2135394af3e9a", optional = true }
-candle-nn = { git = "https://github.com/huggingface/candle", rev = "70f72e9cfdbfc570846ca363ead2135394af3e9a", optional = true }
+candle-core = { version = "0.11.0", git = "https://github.com/huggingface/candle", rev = "70f72e9cfdbfc570846ca363ead2135394af3e9a", optional = true }
+candle-nn = { version = "0.11.0", git = "https://github.com/huggingface/candle", rev = "70f72e9cfdbfc570846ca363ead2135394af3e9a", optional = true }
 rs_poker = { version = "5", optional = true }
 
 [dev-dependencies]

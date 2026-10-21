@@ -182,15 +182,11 @@ describe('scaffold — ADR-022 default-deny mcp-policy.json (Dream Cycle 2026-10
     expect(report.worst).not.toBe('high');
   });
 
-  it('does NOT emit .harness/mcp-policy.json when the rendered output registers no MCP server (no .claude/settings.json at all)', async () => {
+  it('omits the policy for a pi-dev harness with no MCP registration', async () => {
     const root = await tmpRoot('e2e-mcp-off-');
-    const target = join(root, 'codex-bot');
-    // host: 'codex' (claude-code not in the host set) drops `.claude/settings.json`
-    // entirely per the GH #11 filter a few lines above in src/index.ts — a real,
-    // already-exercised code path, not a synthetic bypass. No MCP registration
-    // surface this scanner key on → no policy file should appear.
+    const target = join(root, 'pi-bot');
     const r = await scaffold({
-      name: 'codex-bot', template: 'minimal', host: 'codex',
+      name: 'pi-bot', template: 'minimal', host: 'pi-dev',
       targetDir: target, generatorVersion: '0.1.0',
     });
     expect(r.paths).not.toContain('.claude/settings.json');

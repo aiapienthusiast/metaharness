@@ -155,8 +155,9 @@ export async function doctor(args: string[]): Promise<SubcommandResult> {
   const hasPi = existsSync(join(dir, 'AGENTS.md'));
   const hasHermes = existsSync(join(dir, 'cli-config.yaml'));
   const hasOpenClaw = existsSync(join(dir, '.openclaw', 'openclaw.json'));
-  check(hasClaudeCode || hasCodex || hasPi || hasHermes || hasOpenClaw,
-    'at least one host artifact present (.claude/, .codex/, AGENTS.md, cli-config.yaml, or .openclaw/openclaw.json)');
+  const hasRvm = existsSync(join(dir, 'rvm.manifest.toml'));
+  check(hasClaudeCode || hasCodex || hasPi || hasHermes || hasOpenClaw || hasRvm,
+    'at least one host artifact present (.claude/, .codex/, AGENTS.md, cli-config.yaml, .openclaw/openclaw.json, or rvm.manifest.toml)');
 
   // iter 134: surface .claude-plugin/plugin.json presence (the second-path
   // `claude -p --plugin-dir <harness>` proof). All scaffolds since

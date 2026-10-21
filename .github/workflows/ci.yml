@@ -139,6 +139,8 @@ jobs:
         run: npm run build
       - name: TypeScript tests
         run: npm test
+      - name: Dream integration regressions
+        run: npx vitest run __tests__/dream-explicit-new.test.ts --maxWorkers=2
       - name: Path-handling guard (the /tmp Windows bug regression test)
         shell: bash
         run: node scripts/path-guard.mjs

@@ -15,4 +15,4 @@ Integrates Dream PRs #406, #410, #414, #419, #421, and #423 with review fixes:
 
 The scoped Dream release workflow packs once, tests installed ESM/CJS and CLI entrypoints, publishes those exact tarballs, and verifies npm and GitHub download hashes. It requires successful CI and Security workflows on the merged source SHA. Darwin package publication remains separate.
 
-Reproduce: `npm ci --ignore-scripts`, `npm run build`, `npx vitest run --maxWorkers=2`, `node --test bench/swebench/cost-guard.test.mjs`, `npm audit`, `node bench/dream/canonicalization.mjs`, `node scripts/dream-release.mjs pack`, and `node scripts/dream-release.mjs smoke`.
+Reproduce: `npm ci --ignore-scripts`, `npm run build`, `npx vitest run --maxWorkers=2`, `node --test packages/darwin-mode/bench/swebench/cost-guard.test.mjs`, `npm audit`, `node bench/dream/canonicalization.mjs`, `node scripts/dream-release.mjs pack`, and `node scripts/dream-release.mjs smoke`.
