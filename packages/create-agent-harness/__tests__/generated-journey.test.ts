@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { afterEach, describe, expect, it } from 'vitest';
-import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, rm, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync, spawn } from 'node:child_process';
@@ -113,6 +113,46 @@ describe('generated user journey', () => {
     } finally { await client.close(); }
   });
 
+  it('rejects non-object MCP arguments while retaining the connection', async () => {
+    const dir = await generate();
+    const requests = [
+      {jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2025-11-25',capabilities:{},clientInfo:{name:'adversarial',version:'1'}}},
+      ...[null, [], 'text', 1, false, {path:'/etc/passwd'}].map((arguments_, index) =>
+        ({jsonrpc:'2.0',id:index+2,method:'tools/call',params:{name:'harness_info',arguments:arguments_}})),
+      {jsonrpc:'2.0',id:8,method:'ping'},
+    ];
+    const responses = await new Promise<any[]>((resolve, reject) => {
+      const child = spawn(process.execPath, [join(dir,'bin/mcp.js')], {stdio:['pipe','pipe','pipe']});
+      let stdout = ''; child.stdout.on('data', chunk => {stdout += chunk;}); child.stderr.resume();
+      child.on('error', reject);
+      child.on('close', code => code === 0 ? resolve(stdout.trim().split('\n').map(line => JSON.parse(line))) : reject(new Error('MCP exited '+code)));
+      child.stdin.end(requests.map(request => JSON.stringify(request)).join('\n')+'\n');
+    });
+    expect(responses.slice(1,7).map(response => response.error?.code)).toEqual(Array(6).fill(-32602));
+    expect(responses.at(-1)).toMatchObject({id:8,result:{}});
+  });
+
+  it('preserves a user-owned file when an upgrade first adds that path', async () => {
+    const dir = await generate();
+    const manifest = await json(dir, '.harness/manifest.json');
+    const path = 'agents/reviewer.md'; delete manifest.files[path];
+    const body = JSON.stringify(manifest);
+    await writeFile(join(dir, '.harness/manifest.json'), body);
+    await writeFile(join(dir, '.harness/manifest.sha256'), createHash('sha256').update(body).digest('hex'));
+    await writeFile(join(dir, path), 'User-owned review instructions');
+    const result = await upgradeCmd([dir, '--apply', '--conflict=rej']);
+    expect(result.code).toBe(1);
+    expect(await readFile(join(dir, path), 'utf8')).toBe('User-owned review instructions');
+    expect(await readFile(join(dir, path + '.rej'), 'utf8')).toContain('You review diffs');
+  });
+
+  it('accepts a plugin that omits the optional author field', async () => {
+    const dir = await generate();
+    const plugin = await json(dir, '.claude-plugin/plugin.json'); delete plugin.author;
+    await writeFile(join(dir, '.claude-plugin/plugin.json'), JSON.stringify(plugin));
+    expect((await doctor([dir])).code).toBe(0);
+  });
+
   it('upgrade preserves user policy and keeps plugin instructions and server packaged', async () => {
     const dir = await generate();
     // Reconstruct the previously generated manifest before the plugin/runtime overlay.
@@ -122,6 +162,7 @@ describe('generated user journey', () => {
         await rm(join(dir, path), {force: true}); delete manifest.files[path];
       }
     }
+    for (const directory of ['commands', 'skills', 'agents']) await rm(join(dir, directory), {recursive: true, force: true});
     const plugin = await json(dir, '.claude-plugin/plugin.json');
     delete plugin.author.name; delete plugin.mcpServers;
     const legacy = JSON.stringify(plugin); await writeFile(join(dir, '.claude-plugin/plugin.json'), legacy);
@@ -136,5 +177,6 @@ describe('generated user journey', () => {
     expect((await json(dir, '.harness/mcp-policy.json')).maxToolCallsPerTurn).toBe(2);
     expect((await json(dir, '.claude-plugin/plugin.json')).author.name).toBeTruthy();
     expect(await readFile(join(dir, 'bin/mcp.js'), 'utf8')).toContain('harness_info');
+    expect((await upgradeCmd([dir, '--apply'])).code).toBe(0);
   });
 });

@@ -18,9 +18,9 @@
 //      >>>>>>> upstream) OR as .rej files alongside, depending on user's
 //      preference. Default: inline markers.
 
-import { readFile, writeFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { existsSync, lstatSync } from 'node:fs';
+import { dirname, isAbsolute, join } from 'node:path';
 import type { HarnessManifest } from './manifest.js';
 import { diffFingerprints, sha256 } from './manifest.js';
 
@@ -35,6 +35,23 @@ export interface UpgradePlan {
     /** 'clean' = local matches old (safe overwrite); 'conflict' = local diverged. */
     kind: 'clean' | 'conflict';
   }>;
+}
+
+/** New overlay files must not follow user-created links outside the harness. */
+function checkUpgradePath(projectDir: string, path: string): void {
+  const parts = path.split('/');
+  if (isAbsolute(path) || path.includes('\\') || parts.some(p => !p || p === '.' || p === '..')) {
+    throw new Error(`Unsafe upgrade path: ${path}`);
+  }
+  let current = projectDir;
+  for (const part of parts) {
+    current = join(current, part);
+    try {
+      if (lstatSync(current).isSymbolicLink()) throw new Error(`Upgrade refuses symbolic link: ${path}`);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    }
+  }
 }
 
 /**
@@ -60,15 +77,27 @@ export async function planUpgrade(
 
   const plan: UpgradePlan = {
     removed: diff.removed,
-    added: diff.added,
+    added: [],
     changed: [],
   };
 
+  for (const path of diff.added) {
+    checkUpgradePath(projectDir, path);
+    const local = join(projectDir, ...path.split('/'));
+    if (!existsSync(local)) plan.added.push(path);
+    else if (sha256(await readFile(local, 'utf-8')) !== newFiles[path]) {
+      // A path new to the template is not necessarily new to the user's repo.
+      plan.changed.push({ path, kind: 'conflict' });
+    }
+  }
+
   for (const path of diff.changed) {
+    checkUpgradePath(projectDir, path);
     const local = join(projectDir, ...path.split('/'));
     let kind: 'clean' | 'conflict' = 'clean';
     if (existsSync(local)) {
       const localHash = sha256(await readFile(local, 'utf-8'));
+      if (localHash === newFiles[path]) continue; // already upgraded or resolved by the user
       const oldHash = oldFiles[path];
       if (localHash !== oldHash) {
         // Local has diverged from the originally-generated content.
@@ -133,20 +162,30 @@ export async function applyPlan(
   const modified: string[] = [];
   const style = opts.conflictStyle ?? 'inline';
 
+  // Preflight before writing any part of this plan, including .rej destinations.
+  for (const path of [...plan.added, ...plan.changed.map(c => c.path)]) {
+    checkUpgradePath(projectDir, path);
+    if (style === 'rej' || path === '.harness/mcp-policy.json') checkUpgradePath(projectDir, path + '.rej');
+  }
+
   for (const path of plan.added) {
     const target = join(projectDir, ...path.split('/'));
-    await writeFile(target, newContents[path] ?? '', 'utf-8');
+    await mkdir(dirname(target), { recursive: true });
+    // A file created after planning belongs to its writer, not this upgrade.
+    await writeFile(target, newContents[path] ?? '', { encoding: 'utf-8', flag: 'wx' });
     modified.push(path);
   }
 
   for (const c of plan.changed) {
     const target = join(projectDir, ...c.path.split('/'));
+    await mkdir(dirname(target), { recursive: true });
     const upstream = newContents[c.path] ?? '';
     if (c.kind === 'clean') {
       await writeFile(target, upstream, 'utf-8');
       modified.push(c.path);
     } else {
-      if (style === 'inline') {
+      // Never turn a user's active security policy into invalid JSON.
+      if (style === 'inline' && c.path !== '.harness/mcp-policy.json') {
         const local = existsSync(target) ? await readFile(target, 'utf-8') : '';
         await writeFile(target, inlineConflictMarkers(local, upstream), 'utf-8');
       } else {

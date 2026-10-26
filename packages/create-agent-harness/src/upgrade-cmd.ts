@@ -118,11 +118,14 @@ export async function upgradeCmd(args: string[]): Promise<SubcommandResult> {
     return { code: 0, lines };
   }
   const conflicts = plan.changed.filter(c => c.kind === 'conflict');
+  const conflictDescription = conflictStyle === 'rej' ? '.rej files'
+    : conflicts.some(c => c.path === '.harness/mcp-policy.json')
+      ? 'inline markers (security policy uses a .rej file)' : 'inline markers';
 
   if (!apply) {
     lines.push('', `  DRY-RUN: re-run with --apply to apply this plan.`);
     if (conflicts.length > 0) {
-      lines.push(`  ${conflicts.length} conflict(s) will use ${conflictStyle === 'inline' ? 'inline markers' : '.rej files'}.`);
+      lines.push(`  ${conflicts.length} conflict(s) will use ${conflictDescription}.`);
     }
     return { code: 0, lines };
   }
@@ -131,7 +134,7 @@ export async function upgradeCmd(args: string[]): Promise<SubcommandResult> {
   const modified = await applyPlan(dir, plan, upstreamFiles, { conflictStyle });
   lines.push('', `  Modified ${modified.length} file(s).`);
   if (conflicts.length > 0) {
-    lines.push(`  ${conflicts.length} conflict(s) written using ${conflictStyle === 'inline' ? 'inline markers' : '.rej files'} — review manually.`);
+    lines.push(`  ${conflicts.length} conflict(s) written using ${conflictDescription} — review manually.`);
     return { code: 1, lines };  // non-zero so CI flags unresolved conflicts
   }
   lines.push('  Clean apply — no conflicts.');

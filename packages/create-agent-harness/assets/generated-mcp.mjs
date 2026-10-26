@@ -34,7 +34,7 @@ export function startMcp() {
     else if (!initialized) { error(id, -32000, 'Initialize first'); return; }
     else if (method === 'tools/list') result = {tools: [tool]};
     else if (method === 'tools/call') {
-      const args = params?.arguments ?? {};
+      const args = params?.arguments === undefined ? {} : params.arguments;
       if (params?.name !== tool.name || !args || typeof args !== 'object' || Array.isArray(args) || Object.keys(args).length) {
         error(id, -32602, 'Only harness_info with empty arguments is supported'); return;
       }

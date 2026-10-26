@@ -169,8 +169,9 @@ export async function doctor(args: string[]): Promise<SubcommandResult> {
     try {
       const plugin = JSON.parse(await readFile(pluginPath, 'utf-8'));
       if (typeof plugin.name === 'string' && plugin.name.length > 0) {
-        check(typeof plugin.author?.name === 'string' && plugin.author.name.trim().length > 0,
-          '.claude-plugin/plugin.json author.name is a non-empty string');
+        check(plugin.author === undefined ||
+          (typeof plugin.author?.name === 'string' && plugin.author.name.trim().length > 0),
+          '.claude-plugin/plugin.json author.name is a non-empty string when author is provided');
         lines.push(`  PASS .claude-plugin/plugin.json parsed (name=${plugin.name}; host loading not executed)`);
       } else {
         check(false, '.claude-plugin/plugin.json is missing the "name" field');
