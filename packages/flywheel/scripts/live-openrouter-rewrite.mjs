@@ -27,6 +27,7 @@ const ledger = [];
 let reservedUsd = 0;
 let pricing;
 let key;
+let ownsOutput = false;
 
 const specs = [
   { id: 'dedup',
@@ -66,6 +67,7 @@ function evaluate(source, cases) {
 }
 
 async function persist(extra = {}) {
+  if (!ownsOutput) return;
   await mkdir(outdir, { recursive: true });
   await writeFile(join(outdir, 'calls.json'), JSON.stringify(ledger, null, 2));
   await writeFile(join(outdir, 'checkpoint.json'), JSON.stringify({ runId, model, capUsd, reservedUsd, calls:ledger.length, ...extra }, null, 2));
@@ -125,7 +127,7 @@ async function actor(spec, runbook, stage) {
   return { source:parsed.source, cost:ledger.at(-1).estimatedCostUsd };
 }
 
-function completionGate(evidence) {
+export function completionGate(evidence) {
   const verdict = meetsPromotionRule(evidence);
   if (evidence.candidate.primary <= evidence.baseline.primary)
     return {promote:false,reasons:[...verdict.reasons,'strict_completion_lift_required']};
@@ -141,6 +143,9 @@ async function main() {
     for (const task of specs) if (!task.dev.length || !task.holdout.length || !task.anchor.length) throw Error('missing split');
     console.log(JSON.stringify({selfTest:true,families:specs.length})); return;
   }
+  await mkdir(outdir,{recursive:true});
+  await writeFile(join(outdir,'.run-claim.json'),JSON.stringify({runId}),{flag:'wx'});
+  ownsOutput = true;
   // Parse only the requested provider slot from the documented ruOS runtime mount, in host memory.
   // Do not source the whole file or inherit unrelated provider keys into the evaluator.
   const runtimeFile = process.env.RUOS_SECRET_ENV ?? '/run/user/1000/ruos-env';
@@ -242,4 +247,6 @@ async function main() {
   console.log(JSON.stringify(evidence.summary));
 }
 
-main().catch(async () => { await persist({status:'failed',failure:'bounded_live_run_failed'}); console.error('bounded_live_run_failed; inspect sanitized checkpoint'); process.exitCode=1; });
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch(async () => { await persist({status:'failed',failure:'bounded_live_run_failed'}); console.error('bounded_live_run_failed; inspect sanitized checkpoint'); process.exitCode=1; });
+}

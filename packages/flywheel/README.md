@@ -85,6 +85,11 @@ qualifies a proposal only. No weights, PPO training, critic inheritance, or TB G
 The integration test repairs real temporary files with Node processes but uses a deterministic adapter;
 it establishes orchestration correctness, not model learning. See [ADR 322](../../docs/adrs/ADR-322-terminal-rsi-verified-rewriting.md).
 
+The [live ruOS and OpenRouter smoke](../../docs/validation/terminal-rsi-live-smoke.md) made 44 API
+calls, produced four replayable signed bundles and correctly rejected a transferred runbook regression.
+Baseline confirmation passed four of four comparisons; assisted confirmation passed three of four.
+No promotion was made. This evidence supports guardrail operation, not default enablement or capability lift.
+
 ```sh
 npm run build --workspace @metaharness/flywheel
 npm run test --workspace @metaharness/flywheel
