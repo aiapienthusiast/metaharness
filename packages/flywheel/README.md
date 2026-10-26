@@ -37,9 +37,7 @@ Most "self-improving agent" pitches are unfalsifiable. The flywheel makes improv
 - **Receipt-backed + replayable.** Every promotion is Ed25519-signed; an external reviewer replays the
   bundle, reconstructs the lineage to gen-0, and verifies the gate — trusting the *signature*, not you.
 
-## Features
-
-### Verified trajectory rewriting
+## Verified trajectory rewriting
 
 `createVerifiedRewriteProposer(target, config, observe)` adapts Terminal RSI style verified rewriting
 to the existing Flywheel proposer. It consumes an explicitly public development trace, generates a
@@ -93,6 +91,8 @@ npm run test --workspace @metaharness/flywheel
 node packages/flywheel/scripts/verify-dual.mjs
 node packages/flywheel/scripts/benchmark-verified-rewrite.mjs
 ```
+
+## Features
 
 - 🎯 **One tiny API** — `runFlywheelGenerations()` drives coding *and* non-coding harnesses unchanged.
 - 🧊 **Frozen, pluggable gate** — ship the default `meetsPromotionRule` or inject your own compliance/cost gate.

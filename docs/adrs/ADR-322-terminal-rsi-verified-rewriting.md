@@ -98,6 +98,15 @@ An existing root lockfile inconsistency makes `npm ci` fail on missing native ke
 entries. Validation used an isolated toolchain and workspace links; dependency manifests and the
 repository lockfile were unchanged. Full monorepo validation is not claimed.
 
+Scoped security scan: `npx -y @claude-flow/cli@3.25.6 security scan --target
+packages/flywheel/src/verified-rewrite.ts --depth deep --type all`, run on 2026-10-26, returned
+zero findings at every severity. This is a source scan of the new module, not a dependency or
+production security certification. The scanner did not expose an advisory feed timestamp.
+Repository lockfile SHA256: `b163bbb0efda05b10a35faa68f9e5f9c3fd61bc5ad8eecd3ee03e426b9456794`.
+Manual review checked protected verifier placement, callback trust, public field projection,
+malformed numeric evidence, exception output suppression, cancellation and cleanup. Residual
+adapter trust and cooperative cancellation limits are recorded above.
+
 | Requirement | Executable evidence |
 | --- | --- |
 | Strict success dominates partial progress | Saturation, invalid report, malformed input and strict score tests |
