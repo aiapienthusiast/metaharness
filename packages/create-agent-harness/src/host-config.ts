@@ -53,7 +53,7 @@ function mcpServerEntry(cfg: HostConfigInput): Record<string, unknown> | null {
   if (cfg.mcp === 'remote') {
     return { type: 'http', url: 'https://localhost:8787/mcp', headers: { Authorization: 'Bearer ${HARNESS_MCP_TOKEN}' } };
   }
-  return { command: 'npx', args: ['-y', `${cfg.name}@latest`, 'mcp', 'start'] };
+  return { command: 'node', args: ['./bin/mcp.js'] };
 }
 
 /** Derive a Claude-Code-style allow/deny posture (mirrors the web UI). */
@@ -117,7 +117,7 @@ export function hostConfigFiles(host: string, cfg: HostConfigInput): HostFile[] 
         ? `# ${cfg.name} — MCP disabled at scaffold time.\n`
         : cfg.mcp === 'remote'
           ? `[mcp_servers.${cfg.name}]\ntype = "http"\nurl = "https://localhost:8787/mcp"\n`
-          : `[mcp_servers.${cfg.name}]\ncommand = "npx"\nargs = ["-y", "${cfg.name}@latest", "mcp", "start"]\n`;
+          : `[mcp_servers.${cfg.name}]\ncommand = "node"\nargs = ["./bin/mcp.js"]\n`;
       return [
         { path: '.codex/config.toml', content: toml },
         { path: 'AGENTS.md', content: `# ${cfg.name}\n\n${cfg.description}\n\n## Behavioral rules\n\n- Use the harness's MCP tools (\`mcp__${cfg.name}__*\`) for orchestration.\n- Defer destructive operations to the user.\n` },
@@ -146,7 +146,7 @@ export function hostConfigFiles(host: string, cfg: HostConfigInput): HostFile[] 
       // ADR-046 — verified against real openclaw 2026.6.8: MCP nests under
       // `mcp.servers` with an `enabled` flag (NOT top-level `mcp_servers`);
       // no top-level allow/deny permissions concept.
-      const servers = server ? { [cfg.name]: { enabled: true, command: 'npx', args: ['-y', `${cfg.name}@latest`, 'mcp', 'start'] } } : {};
+      const servers = server ? { [cfg.name]: { enabled: true, ...server } } : {};
       return [{ path: '.openclaw/openclaw.json', content: JSON.stringify({ mcp: { servers } }, null, 2) + '\n' }];
     }
 
@@ -178,7 +178,7 @@ export function hostConfigFiles(host: string, cfg: HostConfigInput): HostFile[] 
       return [
         { path: '.opencode/opencode.json', content: JSON.stringify({
           $schema: 'https://opencode.ai/schema/opencode.json',
-          mcp: server ? { [cfg.name]: { type: 'local', command: ['npx', '-y', `${cfg.name}@latest`, 'mcp', 'start'], enabled: true } } : {},
+          mcp: server ? { [cfg.name]: { type: 'local', command: ['node', './bin/mcp.js'], enabled: true } } : {},
           permission: { edit: cfg.allowFileWrite ? 'allow' : 'ask', bash: { '*': cfg.allowShell ? 'allow' : 'ask', 'rm *': 'deny', 'git push *': 'deny' }, webfetch: 'ask' },
         }, null, 2) + '\n' },
         { path: 'install.md', content: `# Installing ${cfg.name} into OpenCode\n\n1. \`opencode auth login\` to set a model provider.\n2. \`cd\` here and run \`opencode\` — the TUI reads \`.opencode/opencode.json\`.\n3. Inside the TUI run \`/mcp\` to verify \`${cfg.name}\` is registered.\n` },

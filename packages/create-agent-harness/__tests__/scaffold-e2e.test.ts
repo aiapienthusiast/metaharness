@@ -75,8 +75,8 @@ describe('scaffold (e2e)', () => {
       await readFile(join(target, '.claude/settings.json'), 'utf-8'),
     );
     expect(settings.mcpServers['ops-bot']).toBeDefined();
-    expect(settings.mcpServers.alerts).toBeDefined();
-    expect(settings.mcpServers.runbook_store).toBeDefined();
+    // Only advertise the server actually shipped; no placeholder alert/store services.
+    expect(Object.keys(settings.mcpServers)).toEqual(['ops-bot']);
     // Sanity-check the deny list.
     expect(settings.permissions.deny).toContain('Bash(rm *)');
   });

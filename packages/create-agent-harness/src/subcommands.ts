@@ -169,12 +169,14 @@ export async function doctor(args: string[]): Promise<SubcommandResult> {
     try {
       const plugin = JSON.parse(await readFile(pluginPath, 'utf-8'));
       if (typeof plugin.name === 'string' && plugin.name.length > 0) {
-        lines.push(`  PASS .claude-plugin/plugin.json (name=${plugin.name}, claude -p --plugin-dir works)`);
+        check(typeof plugin.author?.name === 'string' && plugin.author.name.trim().length > 0,
+          '.claude-plugin/plugin.json author.name is a non-empty string');
+        lines.push(`  PASS .claude-plugin/plugin.json parsed (name=${plugin.name}; host loading not executed)`);
       } else {
-        lines.push('  WARN .claude-plugin/plugin.json is missing the "name" field');
+        check(false, '.claude-plugin/plugin.json is missing the "name" field');
       }
     } catch {
-      lines.push('  WARN .claude-plugin/plugin.json is not valid JSON');
+      check(false, '.claude-plugin/plugin.json is not valid JSON');
     }
   } else {
     lines.push('  WARN .claude-plugin/plugin.json absent — `claude -p --plugin-dir` won\'t load this harness as a plugin. Run `npx metaharness harness plugin-init` to backfill, or re-scaffold with metaharness@0.1.3+.');
