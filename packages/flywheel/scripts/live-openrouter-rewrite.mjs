@@ -16,7 +16,8 @@ const endpoint = 'https://openrouter.ai/api/v1';
 const model = process.env.REWRITE_MODEL ?? 'qwen/qwen3.8-27b';
 const maxCalls = 36;
 const maxTokens = 1600;
-const capUsd = 2;
+const capUsd = Number(process.env.REWRITE_CAP_USD ?? 2);
+if (!Number.isFinite(capUsd) || capUsd <= 0 || capUsd > 2) throw Error('invalid API cap');
 const signal = AbortSignal.timeout(8 * 60_000);
 const outdir = resolve(process.argv[2] ?? './terminal-rsi-live-evidence');
 const runId = `terminal-rsi-${randomUUID()}`;
@@ -115,6 +116,12 @@ async function actor(spec, runbook, stage) {
   const text = await call(stage, prompt);
   const parsed = JSON.parse(text);
   if (typeof parsed.source !== 'string') throw Error('invalid actor response');
+  const artifact = `${String(ledger.length).padStart(3,'0')}-${stage.replace(/[^a-z0-9-]/gi,'_')}.py`;
+  await mkdir(join(outdir,'artifacts'), {recursive:true});
+  await writeFile(join(outdir,'artifacts',artifact),parsed.source);
+  ledger.at(-1).artifact = `artifacts/${artifact}`;
+  ledger.at(-1).sourceDigest = createHash('sha256').update(parsed.source).digest('hex');
+  await persist();
   return { source:parsed.source, cost:ledger.at(-1).estimatedCostUsd };
 }
 
@@ -198,6 +205,13 @@ async function main() {
     });
     family.promotion={count:result.promotions.length,gateReplay:verifyReplayBundle(result.replayBundle,{promotionRule:completionGate}),
       trustedSignerPublicKey:signer.publicKey(),bundle:result.replayBundle};
+    // A rejected candidate normally skips anchor evaluation inside Flywheel. Evaluate it separately
+    // for smoke coverage, without changing any gate decision or its signed evidence.
+    if (family.rewrite?.accepted && !family.evaluations.some(e=>e.suite.endsWith(':anchor')&&e.arm==='candidate')) {
+      const generated=await actor(spec.development,family.rewrite.runbook,`${spec.id}:anchor:candidate-diagnostic`);
+      family.evaluations.push({suite:`${spec.id}:anchor`,arm:'candidate',diagnosticOnly:true,
+        ...evaluate(generated.source,spec.anchor),cost:generated.cost});
+    }
     for(let repeat=0;repeat<2;repeat++) {
       const retry=await actor(spec.confirmation,'',`${spec.id}:retry-control:${repeat}`);
       family.retryControl.push({...evaluate(retry.source,spec.holdout),cost:retry.cost});
@@ -219,7 +233,9 @@ async function main() {
     providerReportedApiCostUsd:ledger.every(e=>typeof e.providerReportedCostUsd==='number')?ledger.reduce((n,e)=>n+e.providerReportedCostUsd,0):null,
     reservedUsd,latencyMedianMs:durations[Math.floor(durations.length/2)]??null,
     latencyP95Ms:durations[Math.min(durations.length-1,Math.ceil(durations.length*.95)-1)]??null,
-    allBundlesReplay:evidence.families.every(f=>f.promotion?.gateReplay.pass===true),
+    bundlesProduced:evidence.families.filter(f=>f.promotion).length,
+    allBundlesReplay:evidence.families.filter(f=>f.promotion).every(f=>f.promotion.gateReplay.pass===true),
+    allFamiliesCompleted:evidence.families.every(f=>f.status==='completed'),
   };
   await writeFile(join(outdir,'evidence.json'),JSON.stringify(evidence,null,2));
   await persist({status:'completed',summary:evidence.summary});
