@@ -277,7 +277,7 @@ jobs:
         with:
           node-version: '24'
       - name: Clean npm 11 install
-        run: npx --yes npm@11 ci --ignore-scripts
+        run: npx --yes npm@11 ci
       - run: npm run build
       - run: npx vitest run packages/kernel-js packages/bench --maxWorkers=2
 
