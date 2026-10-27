@@ -57,19 +57,32 @@
     "@ruvector/emergent-time": "^0.1.0"
   },
   "peerDependencies": {
-    "@ruvector/rvf": "^0.2.0"
-  },
-  "peerDependenciesMeta": {
-    "@ruvector/rvf": {
-      "optional": true
-    }
-  },
-  "optionalDependencies": {
+    "@ruvector/rvf": "^0.2.0",
     "@metaharness/kernel-darwin-arm64": "0.1.0",
     "@metaharness/kernel-darwin-x64": "0.1.0",
     "@metaharness/kernel-linux-x64-gnu": "0.1.0",
     "@metaharness/kernel-linux-arm64-gnu": "0.1.0",
     "@metaharness/kernel-win32-x64-msvc": "0.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@ruvector/rvf": {
+      "optional": true
+    },
+    "@metaharness/kernel-darwin-arm64": {
+      "optional": true
+    },
+    "@metaharness/kernel-darwin-x64": {
+      "optional": true
+    },
+    "@metaharness/kernel-linux-x64-gnu": {
+      "optional": true
+    },
+    "@metaharness/kernel-linux-arm64-gnu": {
+      "optional": true
+    },
+    "@metaharness/kernel-win32-x64-msvc": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=20.0.0"

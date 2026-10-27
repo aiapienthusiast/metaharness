@@ -1,6 +1,6 @@
 # ADR-321: One deadline for contrastive development and confirmation
 
-Status: implemented experimentally; no automatic production promotion.
+**Status**: implemented experimentally; no automatic production promotion.
 
 ## Context
 
@@ -39,3 +39,7 @@ Synthetic parser benchmarks validate mechanics only. Their handcrafted proposers
 Before a capability claim, compare the configured current Darwin optimizer, this loop, and a matched total-cost retry control on preregistered unseen professional tasks. Isolate confirmation answers and require measured benefit, zero policy violations, and declared cost and latency limits. An independent evaluator and host isolation remain required deployment dependencies.
 
 Rollback: revert only the shared deadline change if necessary; the prior contrastive implementation and evidence schema remain intact. A rollback restores the previous per-call timing behavior and must not be described as a complete-session timeout.
+
+## Consequences
+
+The implementation adds explicit evidence and validation requirements. Its results remain bounded by the experimental scope and limitations described above; they do not authorize automatic production promotion.

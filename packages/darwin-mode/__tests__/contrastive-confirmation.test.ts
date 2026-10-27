@@ -172,20 +172,27 @@ describe('independent paired confirmation', () => {
   });
 
   it('discards late outcomes and aborts the adapter signal', async () => {
-    const config = fixture();
-    let input: ConfirmationPairInput | undefined;
-    let complete: ((value: ConfirmationPairOutput) => void) | undefined;
-    config.evaluator.evaluatePair = async value => { input = value; return new Promise(resolve => { complete = resolve; }); };
-    const result = await confirmContrastive({ ...config, budget: { ...config.budget, timeoutMs: 5 } });
-    expect(result.reason).toBe('timeout');
-    expect(input!.signal.aborted).toBe(true);
-    const serialized = JSON.stringify(result);
-    complete!({ tenantId: input!.tenantId, projectId: input!.projectId, environmentDigest: input!.environmentDigest, envelopeDigest: input!.envelopeDigest,
-      taskId: input!.taskId, appliedBaselineDigest: input!.baselineDigest, appliedCandidateDigest: input!.candidateDigest,
-      baselinePassed: false, candidatePassed: true, costUsd: 0 });
-    await Promise.resolve(); await Promise.resolve();
-    expect(JSON.stringify(result)).toBe(serialized);
-    expect(result.stats.cases).toBe(0);
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
+    try {
+      const config = fixture();
+      let input: ConfirmationPairInput | undefined;
+      let complete: ((value: ConfirmationPairOutput) => void) | undefined;
+      config.evaluator.evaluatePair = async value => { input = value; return new Promise(resolve => { complete = resolve; }); };
+      const pending = confirmContrastive({ ...config, budget: { ...config.budget, timeoutMs: 5 } });
+      await vi.advanceTimersByTimeAsync(5);
+      const result = await pending;
+      expect(result.reason).toBe('timeout');
+      expect(input!.signal.aborted).toBe(true);
+      const serialized = JSON.stringify(result);
+      complete!({ tenantId: input!.tenantId, projectId: input!.projectId, environmentDigest: input!.environmentDigest, envelopeDigest: input!.envelopeDigest,
+        taskId: input!.taskId, appliedBaselineDigest: input!.baselineDigest, appliedCandidateDigest: input!.candidateDigest,
+        baselinePassed: false, candidatePassed: true, costUsd: 0 });
+      await Promise.resolve(); await Promise.resolve();
+      expect(JSON.stringify(result)).toBe(serialized);
+      expect(result.stats.cases).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('bounds total time across pairs and never dispatches another pair after the deadline', async () => {

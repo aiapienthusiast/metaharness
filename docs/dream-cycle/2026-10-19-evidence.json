@@ -1,0 +1,89 @@
+{
+  "date": "2026-10-19",
+  "deep_surface": "host-adapters",
+  "scan_surfaces": ["kernel", "sdk"],
+  "session_commit_base": "e0dfd44da72b7adfb7c57fdd42d124be58ed7086",
+  "issue": 418,
+  "pull_request": 419,
+  "classification": "MEASUREMENT",
+  "hypothesis": {
+    "type": "HYPOTHESIS",
+    "text": "Given a harness author who calls defineHarness() with a missing description, or defineTool()/defineMcpServer() with a non-kebab-case name, or a defineHarness() call whose tools or mcpServers arrays contain two entries sharing the same name, when tonight's candidate is applied, then each call should throw a descriptive Error synchronously at definition time instead of silently returning a frozen object that reaches the kernel malformed, subject to: every currently-passing SDK test keeps passing unchanged; no currently-valid harness definition starts throwing; zero changes to @metaharness/kernel or any HarnessDef/AgentDef/etc. type shape."
+  },
+  "prior_disclosure": {
+    "type": "OBSERVATION",
+    "text": "Candidate was pre-identified as a disclosed-not-fixed follow-up in 2026-10-14's host-adapters gist (docs/dream-cycle/2026-10-14-gist.md, Recommended Next Steps #3, 'SDK scan ... independently proposed by two of tonight's five research roles'). Verified directly by reading packages/sdk/README.md line 46 and packages/sdk/__tests__/sdk.test.ts rather than taking the prior disclosure on faith."
+  },
+  "baseline": {
+    "type": "MEASUREMENT",
+    "command": "cd packages/sdk && npx vitest run (after `git stash push -- packages/sdk/src/index.ts`, keeping the new test file)",
+    "result": "18 passed | 5 failed (of 23) -- real AssertionError: expected [Function] to throw an error, on exactly: defineTool>rejects non-kebab-case names, defineMcpServer>rejects non-kebab-case names, defineHarness>detects tool name collision, defineHarness>detects mcp server name collision, defineHarness>rejects missing or empty description"
+  },
+  "candidate": {
+    "type": "MEASUREMENT",
+    "command": "cd packages/sdk && npx vitest run",
+    "result": "23 passed (23), 0 failed, 0 regressions"
+  },
+  "typecheck": { "type": "MEASUREMENT", "command": "cd packages/sdk && npx tsc --noEmit", "result": "clean" },
+  "full_build": { "type": "MEASUREMENT", "command": "npm run build (repo root)", "result": "build-ordered DONE, exit 0, all 4 phases clean" },
+  "blast_radius": {
+    "type": "MEASUREMENT",
+    "text": "grep -rl \"@metaharness/sdk\" --include=*.ts --include=*.json . (excluding packages/sdk/ and node_modules) found zero real import/dependency sites -- only a code comment in packages/host-hermes/__tests__/scrub.test.ts and lockfile workspace entries. No other workspace package declares @metaharness/sdk as a dependency. Re-ran host-hermes's scrub.test.ts (20/20 passed) and root __tests__/pack-contents.test.ts (6/6 passed) anyway for due diligence."
+  },
+  "darwin": {
+    "type": "DECISION",
+    "status": "not_applicable",
+    "reason": "Validation-completeness fix in a pure, synchronous, in-memory SDK module -- no routing weights, topology, or scorer parameters; not one of ADR-071's seven approved mutation surfaces."
+  },
+  "flywheel": {
+    "type": "DECISION",
+    "status": "not_applicable",
+    "reason": "Not a promotion-gate candidate -- no corpus, no LLM eval, no paired outcomes to feed a flywheel receipt."
+  },
+  "reward_hack_check": {
+    "type": "OBSERVATION",
+    "text": "No gold/expected data touched, no existing assertion weakened or removed, no test skipped, no threshold altered. The 3 edited pre-existing tests (agent collision, skill collision, array-defaults) only gained a required `description: 'd'` field -- their .toThrow(/pattern/) and .toEqual([]) matchers are byte-identical to before. Verified independently by a fresh adversarial-critic agent that read every changed line with this lens and confirmed no matcher changed."
+  },
+  "independent_critic": {
+    "type": "DECISION",
+    "verdict": "ACCEPT",
+    "agent": "fresh general-purpose agent, no prior session context",
+    "checked": [
+      "Read full diff (git diff -- packages/sdk) and confirmed it matches the claimed description with no scope creep",
+      "Read packages/sdk/README.md and git show HEAD:packages/sdk/src/index.ts to confirm the baseline gap was real",
+      "Read all 23 tests in sdk.test.ts, confirmed the 3 edited tests only add a required field, no matcher weakened",
+      "Independently ran the git stash / vitest run / git stash pop sequence itself (not trusting the reported result): 18/23 baseline, 23/23 candidate",
+      "Confirmed zero other in-repo packages depend on @metaharness/sdk via its own greps",
+      "Ran npx tsc --noEmit itself: clean",
+      "Checked README's own usage example and repo-wide examples/ dirs for anything that would newly break: none found",
+      "Security review: pure, synchronous, no I/O/network/eval; change only narrows accepted input, never widens it"
+    ],
+    "caveats": [
+      "HarnessDef.description and defineHarness's parameter type remain description?: string (optional) even though runtime now requires it -- cosmetic type/runtime mismatch, not a bug",
+      "defineHarness()'s collision detection stays scoped per-category (agents vs agents, tools vs tools) -- does not check cross-category collisions (e.g. an agent and a tool sharing a name); not addressed by this diff, worth confirming with the kernel whether a flat namespace is required"
+    ]
+  },
+  "security_review": {
+    "type": "OBSERVATION",
+    "text": "Change is confined to packages/sdk/src/index.ts, a pure synchronous authoring-time validation module with no I/O, network, or eval. No new attack surface; every change narrows the accepted input space (throws earlier on bad input), never loosens an existing check."
+  },
+  "promotion_gate_self_check": {
+    "evaluation_complete": true,
+    "effect_positive": true,
+    "significance_sufficient": true,
+    "no_material_regression": true,
+    "tests_green": true,
+    "reward_hack_clear": true,
+    "critic_clear": "ACCEPT, no caveats blocking",
+    "witness_valid": "see gist Witness section",
+    "receipt_reproducible": true
+  },
+  "disclosed_not_fixed_followups": [
+    "Lazy-async-singleton race in kernel-js: self-evolution.ts's ensureLoaded() and memory-rvf.ts's ensure(ns) -- SOTA fix (cache the promise, not the value) researched tonight, deferred given the standing PR backlog and memory-rvf's currently-latent reachability (@ruvector/rvf not installed in this repo).",
+    "kernel-js index.ts's loadNative() has no API-shape check, unlike loadWasm()'s probe-construct pattern.",
+    "CI never checks exports-map completeness (publint/are-the-types-wrong) -- flagged again since 10-14.",
+    "defineHarness()'s collision detection does not check cross-category name collisions (agent vs tool vs mcpServer).",
+    "HarnessDef.description's TypeScript type could be tightened from optional to required to match the new runtime behavior."
+  ],
+  "final_verdict": "ACCEPT"
+}

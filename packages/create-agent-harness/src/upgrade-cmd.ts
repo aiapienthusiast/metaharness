@@ -14,11 +14,10 @@
 import { resolve, join } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { planUpgrade, formatPlan, applyPlan } from './upgrade.js';
-import { walkTemplate, asFileMap } from './walker.js';
-import { templateDir } from './index.js';
+import { planUpgrade, formatPlan, applyPlan, requiresConfigRejection } from './upgrade.js';
+import { asFileMap } from './walker.js';
+import { templateDir, renderScaffold, type Host } from './index.js';
 import {
-  integrateFieldMemory,
   validateFieldMemoryManifest,
 } from './field-memory-scaffold.js';
 import { createHash } from 'node:crypto';
@@ -32,6 +31,8 @@ interface ManifestShape {
   files: Record<string, string>;
   generator_version?: string;
   field_memory?: unknown;
+  hosts?: Host[];
+  features?: { darwin: boolean; sessions: boolean };
 }
 
 function sha256(s: string): string {
@@ -77,23 +78,30 @@ export async function upgradeCmd(args: string[]): Promise<SubcommandResult> {
     return { code: 1, lines };
   }
 
-  const rendered = await walkTemplate(tdir, manifest.vars, { strict: false });
   if (manifest.field_memory !== undefined) {
-    const contractError = validateFieldMemoryManifest(manifest.field_memory);
-    if (contractError) {
-      lines.push(`  manifest field_memory block is invalid: ${contractError}; refusing to drop or reinterpret the overlay`);
-      return { code: 1, lines };
-    }
-    try {
-      // Reapply the exact opt-in overlay used by scaffold(). Without this,
-      // upgrade would treat the runtime dependency and bootstrap as drift,
-      // overwrite package.json/README, and orphan src/field-memory.ts.
-      integrateFieldMemory(rendered);
-    } catch (error) {
-      lines.push(`  field-memory overlay failed: ${error instanceof Error ? error.message : String(error)}`);
+    const error = validateFieldMemoryManifest(manifest.field_memory);
+    if (error) {
+      lines.push(`  manifest field_memory block is invalid: ${error}; refusing to drop or reinterpret the overlay`);
       return { code: 1, lines };
     }
   }
+  // Legacy manifests predate feature flags; recover opt-ins from the installed package.
+  let legacyDarwin = false;
+  if (!manifest.features) {
+    try {
+      const pkg = JSON.parse(await readFile(join(dir, 'package.json'), 'utf-8'));
+      legacyDarwin = !!pkg.devDependencies?.['@metaharness/darwin'];
+    } catch { /* no optional overlay can be inferred */ }
+  }
+  const { rendered } = await renderScaffold({
+    name: String(manifest.vars.name), template: manifest.template,
+    description: String(manifest.vars.description ?? 'My AI agent harness'),
+    host: manifest.vars.host as Host, hosts: manifest.hosts,
+    targetDir: dir, force: false, generatorVersion: manifest.generator_version ?? 'unknown',
+    darwin: manifest.features?.darwin ?? legacyDarwin,
+    sessions: manifest.features?.sessions ?? ('src/sessions/log.ts' in manifest.files),
+    fieldMemory: manifest.field_memory !== undefined,
+  });
   const upstreamFiles = asFileMap(rendered);
   const upstreamFingerprints: Record<string, string> = {};
   for (const [path, content] of Object.entries(upstreamFiles)) {
@@ -110,11 +118,14 @@ export async function upgradeCmd(args: string[]): Promise<SubcommandResult> {
     return { code: 0, lines };
   }
   const conflicts = plan.changed.filter(c => c.kind === 'conflict');
+  const conflictDescription = conflictStyle === 'rej' ? '.rej files'
+    : conflicts.some(c => requiresConfigRejection(c.path))
+      ? 'inline markers (structured configuration uses a .rej file)' : 'inline markers';
 
   if (!apply) {
     lines.push('', `  DRY-RUN: re-run with --apply to apply this plan.`);
     if (conflicts.length > 0) {
-      lines.push(`  ${conflicts.length} conflict(s) will use ${conflictStyle === 'inline' ? 'inline markers' : '.rej files'}.`);
+      lines.push(`  ${conflicts.length} conflict(s) will use ${conflictDescription}.`);
     }
     return { code: 0, lines };
   }
@@ -123,7 +134,7 @@ export async function upgradeCmd(args: string[]): Promise<SubcommandResult> {
   const modified = await applyPlan(dir, plan, upstreamFiles, { conflictStyle });
   lines.push('', `  Modified ${modified.length} file(s).`);
   if (conflicts.length > 0) {
-    lines.push(`  ${conflicts.length} conflict(s) written using ${conflictStyle === 'inline' ? 'inline markers' : '.rej files'} — review manually.`);
+    lines.push(`  ${conflicts.length} conflict(s) written using ${conflictDescription} — review manually.`);
     return { code: 1, lines };  // non-zero so CI flags unresolved conflicts
   }
   lines.push('  Clean apply — no conflicts.');

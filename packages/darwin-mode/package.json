@@ -67,7 +67,7 @@
   },
   "devDependencies": {
     "typescript": "^5.4.0",
-    "vitest": "^2.0.0",
+    "vitest": "^4.1.12",
     "@metaharness/flywheel": "^0.1.1"
   },
   "publishConfig": {

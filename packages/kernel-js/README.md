@@ -9,7 +9,7 @@ A Rust kernel compiled to two npm-shippable targets:
 - **WebAssembly** (primary distribution — runs on Node, browser, Cloudflare Workers, Deno, Bun, edge)
 - **NAPI-RS native** (per-platform `.node` binaries — escape hatch for Node hot paths)
 
-At load time, `loadKernel()` prefers the per-platform native package; falls back to wasm.
+At load time, `loadKernel()` prefers an installed per-platform native package, then wasm, then the dependency-free JavaScript backend.
 
 ## Install
 
@@ -17,7 +17,7 @@ At load time, `loadKernel()` prefers the per-platform native package; falls back
 npm install @metaharness/kernel
 ```
 
-The native packages (`@metaharness/kernel-darwin-arm64`, `-linux-x64-gnu`, etc.) are declared as `optionalDependencies` — npm installs only the one for your platform.
+The native packages (`@metaharness/kernel-darwin-arm64`, `-linux-x64-gnu`, etc.) are optional peers. They are not yet available from the public npm registry (checked 2026-10-27), so they are not installed automatically. The native loader still discovers a compatible package when explicitly installed; otherwise wasm or JavaScript is used. Restore automatic native installation only after the platform packages are published and clean npm 10/11 installs are verified. This source change does not alter already-published kernel versions.
 
 ## Usage
 
