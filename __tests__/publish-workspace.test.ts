@@ -45,6 +45,7 @@ describe('RELEASE_ORDER', () => {
       'vertical-trading',
       'field-memory',
       'create-agent-harness',
+      'avo',
     ]);
   });
 

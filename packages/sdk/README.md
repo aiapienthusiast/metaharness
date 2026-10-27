@@ -43,7 +43,7 @@ export default defineHarness({
 | Invalid tier passes silently | Throws at define time |
 | Two agents named the same → confused dispatch | Throws `agent name collision` |
 | Harness name accepts `MyBot` | Enforces kebab-case (npm-publishable) |
-| Forgot description? Generated harness ships empty | Throws |
+| Explicitly empty description | Throws (omitted descriptions remain optional) |
 
 All `define*()` helpers return frozen objects so you can't accidentally mutate them.
 

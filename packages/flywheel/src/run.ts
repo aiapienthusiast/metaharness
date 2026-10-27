@@ -4,6 +4,7 @@
 // the injected `proposer` / `evaluator` / `promotionRule`. The gate selects the winner on the HOLDOUT;
 // the FROZEN anchor is a separate survival check (never optimized against — the anti-Goodhart guard).
 import { InMemoryLineageStore, computeLiftCurve } from './lineage.js';
+import { canon } from './receipts.js';
 import { meetsPromotionRule, gateFingerprint } from './gate.js';
 import { pairedOutcomesFromItemWins } from './sequential.js';
 import type {
@@ -89,11 +90,18 @@ export async function runFlywheelGenerations(cfg: FlywheelConfig): Promise<Flywh
   // a caller mutating a Score cannot poison later hits.
   const evalCache = cfg.cacheEvaluations ? new Map<string, Score>() : null;
   const evaluate: Evaluator = async (p, suite) => {
-    if (!evalCache) return cfg.evaluator(p, suite);
+    const checked = async (): Promise<Score> => {
+      const result = await cfg.evaluator(p, suite);
+      try { canon(result); } catch (cause) {
+        throw new Error(`Evaluator returned a non-JSON score for suite "${suite.id}"`, { cause });
+      }
+      return result;
+    };
+    if (!evalCache) return checked();
     const key = `${suite.id}\u0000${JSON.stringify(Object.keys(p).sort().map((k) => [k, p[k]]))}`;
     const hit = evalCache.get(key);
     if (hit) return { ...hit };
-    const s = await cfg.evaluator(p, suite);
+    const s = await checked();
     evalCache.set(key, s);
     return { ...s };
   };
