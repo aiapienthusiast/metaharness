@@ -1,0 +1,279 @@
+{
+  "schemaVersion": 1,
+  "evidenceKind": "cooperative-adapter-deadline-benchmark",
+  "provenance": {
+    "gitCommit": "ee4ea2b461e45b9e410d0834a0d7811af28083d6",
+    "sourceAndBuildSha256": "0c1ed6d097e40e6b0edd5278df00c0e317e72fda816a54c21afc16f8287bac40",
+    "files": [
+      {
+        "path": "package-lock.json",
+        "sha256": "f6c9db6b0839b9f978bee6fcead83591d5fbf4997108c9417d0934d61047cd0f"
+      },
+      {
+        "path": "packages/darwin-mode/bench/contrastive/deadline.mjs",
+        "sha256": "4fd9ff050196b1bae15e90bd5656c9bdab4afc9d4163aa99cd8771e68da32123"
+      },
+      {
+        "path": "packages/darwin-mode/bench/contrastive/fixtures.mjs",
+        "sha256": "a03273e95b0cd0ceafa522e9731f0378032dc8d5b84108edbdd7d097fe4fe1c2"
+      },
+      {
+        "path": "packages/darwin-mode/bench/contrastive/live-pilot.mjs",
+        "sha256": "cdaa6801f84e80c719262886bd7050c7eb990ab748d97d726d6a992d26aa6e74"
+      },
+      {
+        "path": "packages/darwin-mode/bench/contrastive/provenance.mjs",
+        "sha256": "e1c7d50979486e979929c3e29616a41f2496a867aad656e96150164aa6ff425b"
+      },
+      {
+        "path": "packages/darwin-mode/bench/contrastive/run-suite.mjs",
+        "sha256": "3bee5db20b821d7edac0ee6a5370a6c69d682b986ce11f733bed12b6350565a0"
+      },
+      {
+        "path": "packages/darwin-mode/bench/contrastive/run.mjs",
+        "sha256": "f4321560282ef6c142418f618e7ee70419650d96f227ad7c11295a85ee527ca0"
+      },
+      {
+        "path": "packages/darwin-mode/bench/contrastive/synthetic-adapter.mjs",
+        "sha256": "44fa8047b4bf43ce75794a0e16e72856b2ee44df2cfc10c91fb4a6383c4c489c"
+      },
+      {
+        "path": "packages/darwin-mode/dist/contrastive/confirmation-types.js",
+        "sha256": "0348bd9e08f696f6bb65c86c79d7d19d9e8a54eb1138fb93792c7b9a891b5922"
+      },
+      {
+        "path": "packages/darwin-mode/dist/contrastive/confirmation.js",
+        "sha256": "4a4bf4224c08d60478df14d7940072b7a79b6e9557520bf8c1efa0015df56ebd"
+      },
+      {
+        "path": "packages/darwin-mode/dist/contrastive/editors.js",
+        "sha256": "1c1d9c2016bf17c6bf2411d47392e057d5cbf54069f5ecfea8cd596e0b71ff34"
+      },
+      {
+        "path": "packages/darwin-mode/dist/contrastive/engine.js",
+        "sha256": "7d0ffb1af5fc80c597b6b6db8f513f7c5bc21e411a4fa74c8e68233fa6e1ce3b"
+      },
+      {
+        "path": "packages/darwin-mode/dist/contrastive/index.js",
+        "sha256": "c82601be61d906c6af31e72380c1ba2f6e0dffefb1e0d3a5a95057d2327ced28"
+      },
+      {
+        "path": "packages/darwin-mode/dist/contrastive/memory.js",
+        "sha256": "c5e564ed202c64e4e55cd83d89a773784a02a61648c49358e80db328409ff409"
+      },
+      {
+        "path": "packages/darwin-mode/dist/contrastive/types.js",
+        "sha256": "01ae2a5b120382f9a648ced7ee8507493a134f216d100fc61600c6c9738235d2"
+      },
+      {
+        "path": "packages/darwin-mode/dist/contrastive/validation.js",
+        "sha256": "912ef4897211873a915962f26b965c92e992c8bb78478c5977e8d459254f6cb1"
+      },
+      {
+        "path": "packages/darwin-mode/src/contrastive/confirmation-types.ts",
+        "sha256": "6f4edf61322b4c20d01d7be4a74c5c8a3ad6927f0b6f7cce398bdf765b7d4e69"
+      },
+      {
+        "path": "packages/darwin-mode/src/contrastive/confirmation.ts",
+        "sha256": "dd485d4753cc321148b54a90d9a7476b92495b0615aab6a6b7503a6c06389fe0"
+      },
+      {
+        "path": "packages/darwin-mode/src/contrastive/editors.ts",
+        "sha256": "0cf802589560ab84b5a0f60b0be6d89ce80904c9b8c970e4e91ac9c337d074d4"
+      },
+      {
+        "path": "packages/darwin-mode/src/contrastive/engine.ts",
+        "sha256": "32d79788143c440169de510419cfff41e012952db15c5c81dfa0cdfdff842e93"
+      },
+      {
+        "path": "packages/darwin-mode/src/contrastive/index.ts",
+        "sha256": "c0f4d88546b7053a6e7fc2d899c37c4f3c4ed35ca423cf6b9d4efe5643173c67"
+      },
+      {
+        "path": "packages/darwin-mode/src/contrastive/memory.ts",
+        "sha256": "dcc510af892c6864dc7f60fc9e85c4e5cff98055471a4db4f0770dcb3574346c"
+      },
+      {
+        "path": "packages/darwin-mode/src/contrastive/types.ts",
+        "sha256": "1bad03ef8cd1b5eeaee7107907dd23918da44c6b531d304155ec6f0eb7775165"
+      },
+      {
+        "path": "packages/darwin-mode/src/contrastive/validation.ts",
+        "sha256": "57634ff4168bd8b5c9b7b67590320abdf1772fc29c47ddaacc96013af16e42aa"
+      }
+    ],
+    "node": "v24.19.0",
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "budgetMs": 100,
+  "stageDelayMs": 30,
+  "current": {
+    "latency": {
+      "n": 5,
+      "medianMs": 100.43350599999997,
+      "p95Ms": 100.76275100000001,
+      "minMs": 100.20324800000003
+    },
+    "samples": [
+      {
+        "elapsedMs": 100.76275100000001,
+        "startedCalls": 4,
+        "abortedCalls": 1,
+        "completedCalls": {
+          "probe": 2,
+          "propose": 1,
+          "compose": 0,
+          "executedRows": 16
+        },
+        "outcome": "baseline",
+        "reason": "timeout",
+        "admittedCalls": 4
+      },
+      {
+        "elapsedMs": 100.30569399999999,
+        "startedCalls": 4,
+        "abortedCalls": 1,
+        "completedCalls": {
+          "probe": 2,
+          "propose": 1,
+          "compose": 0,
+          "executedRows": 16
+        },
+        "outcome": "baseline",
+        "reason": "timeout",
+        "admittedCalls": 4
+      },
+      {
+        "elapsedMs": 100.69473900000003,
+        "startedCalls": 4,
+        "abortedCalls": 1,
+        "completedCalls": {
+          "probe": 2,
+          "propose": 1,
+          "compose": 0,
+          "executedRows": 16
+        },
+        "outcome": "baseline",
+        "reason": "timeout",
+        "admittedCalls": 4
+      },
+      {
+        "elapsedMs": 100.43350599999997,
+        "startedCalls": 4,
+        "abortedCalls": 1,
+        "completedCalls": {
+          "probe": 2,
+          "propose": 1,
+          "compose": 0,
+          "executedRows": 16
+        },
+        "outcome": "baseline",
+        "reason": "timeout",
+        "admittedCalls": 4
+      },
+      {
+        "elapsedMs": 100.20324800000003,
+        "startedCalls": 4,
+        "abortedCalls": 1,
+        "completedCalls": {
+          "probe": 2,
+          "propose": 1,
+          "compose": 0,
+          "executedRows": 16
+        },
+        "outcome": "baseline",
+        "reason": "timeout",
+        "admittedCalls": 4
+      }
+    ]
+  },
+  "prior": {
+    "latency": {
+      "n": 5,
+      "medianMs": 219.896298,
+      "p95Ms": 221.21927400000004,
+      "minMs": 218.16631899999993
+    },
+    "samples": [
+      {
+        "elapsedMs": 220.03603199999998,
+        "startedCalls": 7,
+        "abortedCalls": 0,
+        "completedCalls": {
+          "probe": 4,
+          "propose": 2,
+          "compose": 1,
+          "executedRows": 32
+        },
+        "outcome": "candidate",
+        "reason": "development-improvement",
+        "admittedCalls": 7
+      },
+      {
+        "elapsedMs": 219.896298,
+        "startedCalls": 7,
+        "abortedCalls": 0,
+        "completedCalls": {
+          "probe": 4,
+          "propose": 2,
+          "compose": 1,
+          "executedRows": 32
+        },
+        "outcome": "candidate",
+        "reason": "development-improvement",
+        "admittedCalls": 7
+      },
+      {
+        "elapsedMs": 221.21927400000004,
+        "startedCalls": 7,
+        "abortedCalls": 0,
+        "completedCalls": {
+          "probe": 4,
+          "propose": 2,
+          "compose": 1,
+          "executedRows": 32
+        },
+        "outcome": "candidate",
+        "reason": "development-improvement",
+        "admittedCalls": 7
+      },
+      {
+        "elapsedMs": 219.21434699999986,
+        "startedCalls": 7,
+        "abortedCalls": 0,
+        "completedCalls": {
+          "probe": 4,
+          "propose": 2,
+          "compose": 1,
+          "executedRows": 32
+        },
+        "outcome": "candidate",
+        "reason": "development-improvement",
+        "admittedCalls": 7
+      },
+      {
+        "elapsedMs": 218.16631899999993,
+        "startedCalls": 7,
+        "abortedCalls": 0,
+        "completedCalls": {
+          "probe": 4,
+          "propose": 2,
+          "compose": 1,
+          "executedRows": 32
+        },
+        "outcome": "candidate",
+        "reason": "development-improvement",
+        "admittedCalls": 7
+      }
+    ]
+  },
+  "priorEngineSha256": "e173b517541707e011014928d7e1415259a9f9c57eb14dcbe235cfd9110222c7",
+  "medianElapsedReductionPercent": 54.32687729922585,
+  "limitations": [
+    "Wall-clock timers are best effort and can overshoot under event-loop starvation.",
+    "Adapters cooperate with AbortSignal; untrusted processes require host-enforced termination.",
+    "Stopping unfinished work earlier is a budget correction, not a task-quality or inference-speed improvement.",
+    "Prior engine identity must be supplied by the caller and independently recorded."
+  ]
+}

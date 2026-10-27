@@ -69,7 +69,7 @@ describe('.github/workflows/*.yml', () => {
     const gate2Idx = pub.indexOf('publish-dryrun.mjs');
     // Look for the actual `run: npm publish --provenance` invocation, not
     // the literal string "npm publish" that appears in gate step `name:`s.
-    const firstPubIdx = pub.search(/npm publish --provenance/);
+    const firstPubIdx = pub.indexOf('node scripts/publish-workspace.mjs');
     expect(gate1Idx, 'validate-gcp-secrets.mjs not in publish.yml').toBeGreaterThan(0);
     expect(gate2Idx, 'publish-dryrun.mjs not in publish.yml').toBeGreaterThan(0);
     expect(firstPubIdx, '`npm publish --provenance` not in publish.yml').toBeGreaterThan(0);
@@ -79,7 +79,7 @@ describe('.github/workflows/*.yml', () => {
 
   it('publish.yml runs marketplace-entry.mjs AFTER all npm publish steps', async () => {
     const pub = await readFile(join(WORKFLOWS, 'publish.yml'), 'utf-8');
-    const lastPubIdx = pub.lastIndexOf('npm publish --provenance');
+    const lastPubIdx = pub.lastIndexOf('node scripts/publish-workspace.mjs');
     const marketplaceIdx = pub.indexOf('marketplace-entry.mjs');
     expect(marketplaceIdx, 'marketplace-entry.mjs not wired').toBeGreaterThan(0);
     expect(marketplaceIdx, 'marketplace gen must run after final npm publish').toBeGreaterThan(lastPubIdx);
@@ -87,8 +87,10 @@ describe('.github/workflows/*.yml', () => {
 
   it('publish.yml publishes every host adapter package', async () => {
     const pub = await readFile(join(WORKFLOWS, 'publish.yml'), 'utf-8');
+    expect(pub).toContain('node scripts/publish-workspace.mjs');
+    const publisher = await readFile(join(WORKFLOWS, '../../scripts/publish-workspace.mjs'), 'utf-8');
     for (const host of ['host-claude-code', 'host-codex', 'host-pi-dev', 'host-hermes', 'host-openclaw', 'host-rvm']) {
-      expect(pub, `publish.yml missing ${host}`).toMatch(new RegExp(host));
+      expect(publisher, `publisher missing ${host}`).toMatch(new RegExp(host));
     }
   });
 

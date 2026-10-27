@@ -110,7 +110,7 @@ describe('publishToDirectory — real TLS/auth wiring (not the insecure default)
     // publishToDirectory really passed authMode through instead of the old
     // behavior (new Config(serverAddress) alone), which always left
     // authMode: '' and could never reach this branch.
-    const tlsConfig = new Config('localhost:8888', undefined, undefined, 'tls');
+    const tlsConfig = new Config('localhost:8888', undefined, 'tls');
     const result = await publishToDirectory(VALID_RECORD, {
       name: 'tls-wiring-test',
       version: '0.0.1',
@@ -136,7 +136,7 @@ describe('publishToDirectory — real TLS/auth wiring (not the insecure default)
   });
 
   it('rejects authMode "oidc" with a clear, actionable reason instead of hanging on an interactive login', async () => {
-    const oidcConfig = new Config('localhost:8888', undefined, undefined, 'oidc');
+    const oidcConfig = new Config('localhost:8888', undefined, 'oidc');
     const result = await publishToDirectory(VALID_RECORD, {
       name: 'oidc-test',
       version: '0.0.1',

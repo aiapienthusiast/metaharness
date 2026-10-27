@@ -211,3 +211,16 @@ describe('multi-generation improvement proof', () => {
     expect(verdict.proofClass).not.toBe('INDEPENDENT_CONFIRMATION');
   });
 });
+
+it('digest rejection clears every positive proof claim', () => {
+  const e = makeEvidence();
+  let deep: unknown = 'leaf';
+  for (let i = 0; i < 100; i++) deep = { next: deep };
+  e.createdAt = deep as string;
+  const result = verifyMultiGenerationEvidence(e, expectation(e));
+  expect(result.pass).toBe(false);
+  expect(result.failures).toContain('undigestable_evidence');
+  expect(result.proofClass).toBe('INVALID');
+  expect(result.recursiveImproverEvidence).toBe(false);
+  expect(result.independentConfirmation).toBe(false);
+});
