@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { afterEach, describe, expect, it } from 'vitest';
-import { mkdtemp, readFile, writeFile, rm, mkdir } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, rm, mkdir, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync, spawn } from 'node:child_process';
@@ -67,6 +67,18 @@ describe('generated user journey', () => {
     expect(result.stdout.trim().split('\n').map(line => JSON.parse(line).error.code)).toEqual([-32600, -32700, -32000]);
     expect((await exchange('x'.repeat(65537))).code).toBe(1);
     expect((await exchange('x'.repeat(65537) + '\n')).code).toBe(1);
+  });
+
+  it.skipIf(process.platform === 'win32')('initializes MCP through a symlinked directory with spaces', async () => {
+    const dir = await generate();
+    const parent = await mkdtemp(join(tmpdir(), 'aliased journey ')); roots.push(parent);
+    const alias = join(parent, 'aliased harness'); await symlink(dir, alias, 'dir');
+    const client = new Client({name:'alias-journey',version:'1.0.0'});
+    try {
+      await client.connect(new StdioClientTransport({command:process.execPath,args:[join(alias,'bin/mcp.js')],cwd:parent}));
+      expect((await client.listTools()).tools.map(tool => tool.name)).toEqual(['harness_info']);
+      expect(JSON.stringify((await client.callTool({name:'harness_info',arguments:{}})).content)).toContain('journey-bot');
+    } finally { await client.close(); }
   });
 
   it('ships host-discoverable commands, skills and agent instructions', async () => {

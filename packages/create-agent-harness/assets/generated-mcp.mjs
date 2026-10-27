@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Read-only scaffold metadata over MCP stdio. No arbitrary paths, shell or network.
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 const protocols = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
 const tool = { name: 'harness_info', description: 'Read this generated harness name, version and description.',
@@ -57,6 +57,13 @@ export function startMcp() {
 }
 
 // Also launch directly from host configuration; importing from the CLI is inert.
-import { pathToFileURL } from 'node:url';
-import { resolve } from 'node:path';
-if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) startMcp();
+import { fileURLToPath } from 'node:url';
+const invokedDirectly = (() => {
+  if (!process.argv[1]) return false;
+  try {
+    // Node resolves module symlinks; argv may retain /var rather than
+    // /private/var on macOS, or an explicitly symlinked harness directory.
+    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+  } catch { return false; }
+})();
+if (invokedDirectly) startMcp();
