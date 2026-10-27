@@ -1,5 +1,5 @@
 import {readFileSync} from 'node:fs';
-import {execSync} from 'node:child_process';
+import {execFileSync} from 'node:child_process';
 import {describe, it, expect} from 'vitest';
 
 const workflow = readFileSync('.github/workflows/ci.yml','utf8').replace(/\r\n/g,'\n');
@@ -14,7 +14,9 @@ describe('CI aggregate result', () => {
   it.each(['failure','cancelled','skipped','success'])('reports a Dream dependency result of %s truthfully', result => {
     const command = aggregate.match(/run: >-\n\s+(node -e [^\n]+)/)?.[1];
     expect(command).toBeTruthy();
-    const run = () => execSync(command!, {env:{...process.env, NEEDS_JSON:JSON.stringify({'dream-validation':{result},node:{result:'success'}})},stdio:'pipe'});
+    // Run the workflow's inline script directly: going through a shell makes the single quotes cmd.exe-dependent on Windows.
+    const script = command!.slice(command!.indexOf("'") + 1, command!.lastIndexOf("'"));
+    const run = () => execFileSync(process.execPath, ['-e', script], {env:{...process.env, NEEDS_JSON:JSON.stringify({'dream-validation':{result},node:{result:'success'}})},stdio:'pipe'});
     if (result === 'success') expect(run).not.toThrow();
     else expect(run).toThrow();
   });
