@@ -1,0 +1,24 @@
+{
+  "status": "passed",
+  "evidenceKind": "local-package-regression",
+  "baselineCommit": "ee4ea2b461e45b9e410d0834a0d7811af28083d6",
+  "testFiles": 79,
+  "passed": 840,
+  "skipped": 14,
+  "failed": 0,
+  "tools": {
+    "typescript": "5.4.5",
+    "vitest": "2.1.9",
+    "nodeTypes": "20.19.43"
+  },
+  "commands": [
+    "tsc -p packages/darwin-mode/tsconfig.json",
+    "vitest run packages/darwin-mode/__tests__ --maxWorkers=2 --minWorkers=1",
+    "node packages/darwin-mode/bench/confirmation/offline.mjs",
+    "node packages/darwin-mode/bench/contrastive/run-suite.mjs",
+    "node packages/darwin-mode/bench/contrastive/deadline.mjs <archived-v0.12-engine>",
+    "git diff --check"
+  ],
+  "scope": "Darwin package only, not full monorepo or paid model evaluation",
+  "dependencyLimitation": "Repository npm ci fails on preexisting missing optional kernel packages in lockfile. Used isolated pinned compiler/test tools; no lockfile repairs or install scripts."
+}

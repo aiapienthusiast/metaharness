@@ -157,3 +157,12 @@ describe('ACCEPTANCE — one runFlywheelGenerations() API, three domains, no ben
     expect(verifyReplayBundle(result.replayBundle, { pinnedGateFingerprint: 'deadbeef' }).checks.gateUnchanged).toBe(false);
   });
 });
+
+it.each([NaN, Infinity, -Infinity])('rejects invalid evaluator output before invoking even a permissive promotion rule (%s)', async (primary) => {
+  const a = makeAdapter('invalid', [1], [1]);
+  await expect(runFlywheelGenerations({
+    ...a, maxGenerations: 1, signer: makeSigner(),
+    evaluator: async () => ({ primary, noopRate: 0, costPerWin: 1, regressed: false }),
+    promotionRule: () => ({ promote: true, reasons: [] }),
+  })).rejects.toThrow(/Evaluator returned a non-JSON score/);
+});
