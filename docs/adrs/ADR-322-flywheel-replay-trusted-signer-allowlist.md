@@ -1,6 +1,12 @@
-# ADR-319: Trusted-signer allowlist for `verifyReplayBundle` (closing ADR-274's disclosed key-trust gap)
+# ADR-322: Trusted-signer allowlist for `verifyReplayBundle` (closing ADR-274's disclosed key-trust gap)
 
 - **Status**: Accepted (implemented)
+- **Note**: originally filed as ADR-319 on 2026-10-06. Renumbered to ADR-322 on 2026-10-27, while this
+  PR (#377) still sat unmerged, after `ADR-319-bounded-contrastive-development.md` independently
+  claimed ADR-319 and merged to `main` in the interim (part of the "contrastive development" series,
+  ADR-319→321). Per this series' own established precedent for exactly this situation (ADR-274's own
+  history: "the already-merged ADR keeps its number; the one still in an unmerged PR moves") — confirmed
+  free as of this renumber (`docs/adrs/INDEX.md`, highest prior number ADR-321). No content changed.
 - **Date**: 2026-10-06
 - **Deciders**: MetaHarness Dream Cycle (autonomous nightly research), slot 1 (flywheel-promotion)
 - **Tags**: flywheel, replay, verifier, receipts, provenance, key-trust, metaharness
