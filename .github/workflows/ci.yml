@@ -266,6 +266,21 @@ jobs:
         shell: bash
         run: node scripts/install-all.mjs
 
+  # Clean contributor install must work with npm 11, without install fallback.
+  contributor-install:
+    name: Contributor / Node 24 npm 11
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Clean npm 11 install
+        run: npx --yes npm@11 ci --ignore-scripts
+      - run: npm run build
+      - run: npx vitest run packages/kernel-js packages/bench --maxWorkers=2
+
   # ─────────────────────────────────────────────────────────────────────
   # Bench (Linux only — others would be redundant for synthetic corpus)
   # ─────────────────────────────────────────────────────────────────────
@@ -308,7 +323,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────
   ci-pass:
     name: CI passed
-    needs: [rust, wasm, node, meta-proxy-launchagent, meta-proxy-scheduled-task, pack-install, bench]
+    needs: [rust, wasm, node, contributor-install, meta-proxy-launchagent, meta-proxy-scheduled-task, pack-install, bench]
     runs-on: ubuntu-latest
     steps:
       - run: echo "All cross-platform gates green."
