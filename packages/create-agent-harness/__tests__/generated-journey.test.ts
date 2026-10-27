@@ -41,9 +41,13 @@ describe('generated user journey', () => {
       args = JSON.parse(/args = (\[[^\n]+\])/.exec(config)![1]);
     } else if (host === 'opencode') {
       [command, ...args] = (await json(dir, '.opencode/opencode.json')).mcp['journey-bot'].command;
+    } else if (host === 'hermes') {
+      const config = await readFile(join(dir, 'cli-config.yaml'), 'utf8');
+      const server = JSON.parse(config.split('mcp_servers:\n')[1].trim().slice('journey-bot: '.length));
+      ({command, args} = server);
     } else {
-      const config = await json(dir, host === 'hermes' ? 'optional-mcps/journey-bot.json' : host === 'copilot' ? '.vscode/mcp.json' : '.openclaw/openclaw.json');
-      const server = host === 'hermes' ? config['journey-bot'] : host === 'copilot' ? config.servers['journey-bot'] : config.mcp.servers['journey-bot'];
+      const config = await json(dir, host === 'copilot' ? '.vscode/mcp.json' : '.openclaw/openclaw.json');
+      const server = host === 'copilot' ? config.servers['journey-bot'] : config.mcp.servers['journey-bot'];
       ({command, args} = server);
     }
     expect(command).toBe('node');

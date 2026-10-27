@@ -292,11 +292,12 @@ function hostFiles(host: HostId, cfg: HarnessConfig): GenFile[] {
       // `model:` + `agent.personalities`; no name/description/scrub keys.
       const persona = (cfg.description || `You are ${cfg.name}.`).replace(/[\r\n]+/g, ' ');
       const files: GenFile[] = [
-        { path: 'cli-config.yaml', content: `# Hermes Agent config for ${cfg.name} — subset of cli-config.yaml.example.\nmodel:\n  provider: "auto"\nagent:\n  personalities:\n    ${yamlKey(cfg.name)}: ${JSON.stringify(persona)}\n` },
+        { path: 'cli-config.yaml', content: `# Hermes Agent config for ${cfg.name} — subset of cli-config.yaml.example.\nmodel:\n  provider: "auto"\nagent:\n  personalities:\n    ${yamlKey(cfg.name)}: ${JSON.stringify(persona)}\n${mcpServerEntry(cfg) ? `mcp_servers:\n  ${yamlKey(cfg.name)}: ${JSON.stringify(mcpServerEntry(cfg))}\n` : ''}` },
       ];
       if (cfg.primitives.mcp !== 'off') {
         files.push({ path: `optional-mcps/${cfg.name}.json`, content: JSON.stringify({ [cfg.name]: mcpServerEntry(cfg) }, null, 2) + '\n' });
       }
+      files.push({path:'install.md',content:`# Installing ${cfg.name} into Hermes\n\nHermes reads \`$HERMES_HOME/config.yaml\` (normally \`~/.hermes/config.yaml\`), not this folder automatically. Review and merge \`cli-config.yaml\` into the chosen profile, preserving existing configuration and credentials. The optional-mcps export alone does not enable the server.\n`});
       return files;
     }
     case 'openclaw': {

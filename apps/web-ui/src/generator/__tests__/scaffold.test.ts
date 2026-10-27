@@ -62,6 +62,16 @@ describe('buildScaffold', () => {
     expect(cfg.content).toContain('legal-redline: "Redline contracts fast"');
   });
 
+  it('places Hermes MCP registration in its native main configuration', () => {
+    const cfg = buildScaffold({...base,hosts:['hermes']}).find(f => f.path === 'cli-config.yaml')!.content;
+    expect(cfg).toContain('mcp_servers:\n');
+    const server = JSON.parse(cfg.split('mcp_servers:\n')[1].trim().slice('legal-redline: '.length));
+    expect(server.command).toBe('npx');
+    expect(server.args).toContain('legal-redline@latest');
+    const disabled = buildScaffold({...base,hosts:['hermes'],primitives:{...base.primitives,mcp:'off'}}).find(f=>f.path==='cli-config.yaml')!.content;
+    expect(disabled).not.toContain('mcp_servers:');
+  });
+
   // Regression: `cfg.name` lands in YAML *key* position
   // (`agent.personalities.<name>`) and is unconstrained on `HarnessConfig`
   // — a name containing `:` previously produced two top-level `:` on one
