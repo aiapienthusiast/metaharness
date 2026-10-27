@@ -139,6 +139,8 @@ jobs:
         run: npm run build
       - name: TypeScript tests
         run: npm test
+      - name: Dream integration regressions
+        run: npx vitest run __tests__/dream-explicit-new.test.ts --maxWorkers=2
       - name: Path-handling guard (the /tmp Windows bug regression test)
         shell: bash
         run: node scripts/path-guard.mjs
@@ -161,6 +163,7 @@ jobs:
           node scripts/nightly-sota-gate.test.mjs
           node packages/darwin-mode/bench/swebench/solver-trajectory.test.mjs
           node packages/darwin-mode/bench/swebench/test-critic.test.mjs
+          node packages/darwin-mode/bench/swebench/cost-guard.test.mjs
           node scripts/avo-claim-gate.mjs
       - name: Meta-Proxy pin-drift watcher gate (#174)
         # The watcher decides whether to open, retitle, or close a drift issue and
@@ -309,3 +312,45 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo "All cross-platform gates green."
+
+  dream-validation:
+    name: Dream integration / installed artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_OPTIONS: --max-old-space-size=2048
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      # Root regressions are intentionally included; workspace-only npm test misses them.
+      - run: npx vitest run --maxWorkers=1
+      - run: node --test packages/darwin-mode/bench/swebench/cost-guard.test.mjs
+      - run: npm audit --audit-level=moderate
+      - run: node scripts/dream-release.mjs pack
+      - run: node scripts/dream-release.mjs smoke
+      - run: node bench/dream/canonicalization.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dream-artifacts-${{ github.sha }}
+          path: dist-release/
+          if-no-files-found: error
+
+  dream-neural:
+    name: Dream integration / neural feature
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4
+        with:
+          toolchain: '1.99.1'
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32
+      # Explicit override: rust-toolchain.toml intentionally retains 1.88 for the default workspace.
+      - run: cargo +1.99.1 test -p poker-darwin --lib --features neural --jobs 2
