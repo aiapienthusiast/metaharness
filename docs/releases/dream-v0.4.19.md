@@ -4,6 +4,8 @@ Packages: `metaharness@0.4.19`, `@metaharness/sdk@0.1.1`, `@metaharness/flywheel
 
 Corrects npm repository metadata for provenance verification. The earlier `dream-v0.4.18` attempt was rejected before any package was published.
 
+Also includes #439: generated harnesses ship an executable MCP runtime verified by installed-package journey tests, and `upgrade` refuses symbolic-link/unsafe paths, preserves existing `.rej` proposals, creates files exclusively, and keeps structured configuration parseable by writing conflicts to `.rej` files.
+
 Integrates Dream PRs #406, #410, #414, #419, #421, and #423 with review fixes:
 
 - Bound receipt canonicalization depth and reject non-finite signed numbers. Evaluator failures stop before invalid scores can enter signed evidence. Finite receipt bytes remain compatible with existing signatures and JSON transport.
