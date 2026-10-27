@@ -34,3 +34,8 @@ lto = true
 codegen-units = 1
 strip = true
 panic = "abort"
+
+# Convergence tests execute millions of CFR iterations. Optimize this crate's
+# test build while retaining the test profile's debug assertions/overflow checks.
+[profile.test.package.poker-darwin]
+opt-level = 2
