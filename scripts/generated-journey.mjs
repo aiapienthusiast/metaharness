@@ -28,8 +28,13 @@ try {
   // Exercise the generated project's documented development commands as a user.
   run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund'], harness);
   run('npm', ['run', 'build'], harness);
-  const tests = run('npm', ['test', '--', '--run'], harness);
-  assert.match(tests, /Tests\s+[1-9]\d* passed/);
+  // CI forces ANSI colours; verify machine-readable outcomes rather than terminal presentation.
+  const testReport = join(scratch, 'generated-tests.json');
+  run('npm', ['test', '--', '--run', '--reporter=json', '--outputFile', testReport], harness);
+  const tests = JSON.parse(readFileSync(testReport, 'utf8'));
+  assert.equal(tests.success, true);
+  assert(tests.numPassedTests > 0, 'generated project must execute passing tests');
+  assert.equal(tests.numFailedTests, 0);
   for (const command of ['init', 'doctor']) assert.match(run(process.execPath, ['bin/cli.js', command], harness), /kernel/);
   const doctor = run(process.execPath, [join(installed, 'harness-bin.js'), 'doctor', harness], consumer);
   assert.match(doctor, /HEALTHY/); assert.doesNotMatch(doctor, /--plugin-dir works/);
