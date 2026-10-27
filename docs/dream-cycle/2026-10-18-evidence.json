@@ -1,0 +1,78 @@
+{
+  "date": "2026-10-18",
+  "deep_surface": "security-adversarial",
+  "scan_surfaces": ["sbom", "policy"],
+  "session_commit_base": "e0dfd44da72b7adfb7c57fdd42d124be58ed7086",
+  "issue": 413,
+  "pull_request": 414,
+  "classification": "MEASUREMENT",
+  "hypothesis": {
+    "type": "HYPOTHESIS",
+    "text": "Given a harness scaffolded by `npx metaharness <name>` with any host set that ends up registering an MCP server (today: every scaffold using the default claude-code host), when the generator additionally emits ADR-022's default-deny .harness/mcp-policy.json gated on the same registration signal mcp-scan.ts's own mcpEnabled check uses, then harness mcp-scan's worst-severity verdict drops from high to low/info relative to baseline, subject to: zero regression on hosts (rvm, pi-dev) that register no MCP server at all; full existing test suite stays green; new file covered by manifest provenance hashes."
+  },
+  "baseline": {
+    "type": "MEASUREMENT",
+    "command": "node packages/create-agent-harness/dist/harness-bin.js mcp-scan <dir> --json",
+    "scaffold": "npx metaharness <name> --template minimal (pre-fix generator, captured via git stash)",
+    "result": { "worst": "high", "high_findings": 1, "mcpEnabled": true, "finding_id": "no-policy" }
+  },
+  "candidate": {
+    "type": "MEASUREMENT",
+    "scaffold": "npx metaharness <name> --template minimal (post-fix generator)",
+    "result": { "worst": "low", "high_findings": 0, "mcpEnabled": true }
+  },
+  "regression_check_rvm": {
+    "type": "MEASUREMENT",
+    "scaffold": "npx metaharness <name> --template minimal --host rvm",
+    "baseline_result": { "worst": "info", "mcpEnabled": false },
+    "candidate_result": { "worst": "info", "mcpEnabled": false },
+    "note": "Unchanged pre/post fix -- confirms the gating condition (not an unconditional write) avoids a false mcpEnabled flip."
+  },
+  "self_caught_defect": {
+    "type": "REJECTION",
+    "text": "First draft of the fix wrote .harness/mcp-policy.json unconditionally for every scaffold. Self-testing against the rvm host (which never registers an MCP server) found this flipped mcpEnabled false->true and manufactured a new medium finding where none existed pre-fix. Rejected that draft; corrected to gate on the real rendered .claude/settings.json mcpServers / .mcp.json signal before any independent critic ran."
+  },
+  "test_suite": {
+    "type": "MEASUREMENT",
+    "command": "cd packages/create-agent-harness && npx vitest run",
+    "result": "627/629 passed (2 pre-existing skips), 0 regressions, +4 new tests vs. pre-session baseline of 623/625"
+  },
+  "typecheck": { "type": "MEASUREMENT", "command": "npx tsc (packages/create-agent-harness)", "result": "clean" },
+  "darwin": { "type": "DECISION", "status": "not_applicable", "reason": "Deterministic generator fix (emit-or-don't-emit a fixed JSON object on a boolean signal) has no tunable parameter space for bounded evolution to search. Consistent with prior security-adversarial nights (08-13,08-18,08-28,09-03,09-08,09-18), none of which ran Darwin." },
+  "reward_hack_check": {
+    "type": "OBSERVATION",
+    "text": "Policy field names/values (defaultDeny, allowNetwork, allowShell, allowFileWrite, requireApprovalForDangerous, toolTimeoutMs, maxToolCallsPerTurn, auditLog) verified by direct source read to exactly match what mcp-scan.ts's policy checks (lines ~85-114) and ADR-022's specified default object expect -- not a shape that merely satisfies the scanner's keys without matching its semantics. No test weakened, no gold data modified, no corpus involved (static scanner only, no LLM eval)."
+  },
+  "independent_critic": {
+    "type": "DECISION",
+    "verdict": "ACCEPT-WITH-CAVEATS",
+    "agent": "fresh general-purpose agent, no prior session context",
+    "checked": [
+      "Read full diff live (2 files, purely additive, 0 deletions)",
+      "Read ADR-022, host-config.ts (all 9 non-claude-code hosts), mcp-scan.ts/oia-manifest.ts/score.ts/threat-model.ts mcpEnabled logic, LEDGER.md 2026-09-08 entry",
+      "Ran npx vitest run independently: 627 passed, 2 pre-existing skips, 0 failures",
+      "Built and ran two live scaffolds (claude-code minimal, codex minimal) via node -e against dist/",
+      "git log --all --oneline | grep -i mcp-policy|mcp.scan : no prior commit writes .harness/mcp-policy.json from scaffold() -- confirms novelty against merged history"
+    ],
+    "caveats": [
+      "codex/hermes/openclaw/copilot/opencode hosts still ship a live, ungoverned MCP server with no policy file and no scanner coverage (verified live: --host codex produces .codex/config.toml with a real mcp_servers entry, no policy). Pre-existing, not worsened by this fix, already named as a separate disclosed-not-fixed item in LEDGER.md's 09-08 addendum (candidates #4/#5 in issue #297). Should not be read as having closed ADR-022 generally.",
+      "Critic has no GitHub network access from its sandbox, so could not rule out an in-flight duplicate open PR by searching GitHub directly -- mitigated by this session's own git log --all check plus direct inspection of the 3 most recent security-adversarial dream branches (2026-10-03 #372 budget-watchdog kill-switch, 2026-10-08 #380 dependency CVEs, 2026-10-13 threat-model.ts verdict grid), none of which touch index.ts's scaffold() or write mcp-policy.json."
+    ]
+  },
+  "security_review": {
+    "type": "OBSERVATION",
+    "text": "This IS the security-adversarial finding for tonight; no separate higher-privilege surface touched. The fix only adds a JSON data file read by existing static scanners -- it does not change any runtime enforcement path, grant any new capability, or touch secrets/credentials handling."
+  },
+  "promotion_gate_self_check": {
+    "evaluation_complete": true,
+    "effect_positive": true,
+    "significance_sufficient": true,
+    "no_material_regression": true,
+    "tests_green": true,
+    "reward_hack_clear": true,
+    "critic_clear": "ACCEPT-WITH-CAVEATS (documented, not blocking)",
+    "witness_valid": "pending STEP 16 stamp",
+    "receipt_reproducible": true
+  },
+  "final_verdict": "ACCEPT-WITH-CAVEATS"
+}

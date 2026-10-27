@@ -73,7 +73,8 @@ jobs:
         run: |
           export SEMGREP_BIN="$(command -v semgrep)"
           echo "Using SEMGREP_BIN=$SEMGREP_BIN"
-          npm run -w @metaharness/darwin test
+          # A case may launch four real Semgrep processes; the unit-test 5s default is insufficient.
+          npm run -w @metaharness/darwin test -- --maxWorkers=2 --testTimeout=60000
 
       # Deterministic projects suite (must NOT touch @metaharness/projects source).
       - name: Build + test @metaharness/projects (deterministic)
