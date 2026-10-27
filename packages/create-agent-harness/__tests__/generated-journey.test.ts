@@ -158,6 +158,27 @@ describe('generated user journey', () => {
     expect(await readFile(join(dir, path + '.rej'), 'utf8')).toContain('You review diffs');
   });
 
+  it('preserves customized legacy Claude permissions during registration migration', async () => {
+    const dir = await generate();
+    const path = '.claude/settings.json';
+    const oldSettings = {permissions:{allow:['mcp__journey-bot__*'],deny:['Read(./.env)']},
+      mcpServers:{'journey-bot':{command:'npx',args:['-y','journey-bot@latest','mcp','start']}}};
+    const original = JSON.stringify(oldSettings);
+    const manifest = await json(dir,'.harness/manifest.json');
+    manifest.files[path] = createHash('sha256').update(original).digest('hex');
+    const body = JSON.stringify(manifest);
+    await writeFile(join(dir,'.harness/manifest.json'),body);
+    await writeFile(join(dir,'.harness/manifest.sha256'),createHash('sha256').update(body).digest('hex'));
+    oldSettings.permissions.deny.push('Bash(curl *)');
+    const customized = JSON.stringify(oldSettings); await writeFile(join(dir,path),customized);
+    const result = await upgradeCmd([dir,'--apply']);
+    expect(result.code).toBe(1);
+    expect(await readFile(join(dir,path),'utf8')).toBe(customized);
+    expect((await json(dir,path)).permissions.deny).toContain('Bash(curl *)');
+    expect((await json(dir,path+'.rej')).mcpServers['journey-bot'].command).toBe('node');
+    expect(result.lines.join('\n')).toContain('security policy uses a .rej file');
+  });
+
   it('accepts a plugin that omits the optional author field', async () => {
     const dir = await generate();
     const plugin = await json(dir, '.claude-plugin/plugin.json'); delete plugin.author;
