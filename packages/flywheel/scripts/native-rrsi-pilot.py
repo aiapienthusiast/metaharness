@@ -59,6 +59,9 @@ def main():
     ap.add_argument("out", type=Path)
     ap.add_argument("--live", action="store_true")
     args = ap.parse_args()
+    cap_usd = float(os.environ.get("RSI_PILOT_CAP_USD", "3"))
+    if not math.isfinite(cap_usd) or not 0 < cap_usd <= 3:
+        raise RuntimeError("invalid pilot cap")
     actual = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=args.rrsi_root, text=True).strip()
     if actual != PIN:
         raise RuntimeError("upstream source pin mismatch")
@@ -79,7 +82,7 @@ def main():
     deadline = time.monotonic() + 600
     freeze = {"schema": "native-rrsi-components-pilot/v1", "upstreamPin": PIN, "actor": ACTOR,
               "editor": EDITOR, "baseline": BASELINE, "development": DEV, "confirmation": CONFIRM,
-              "rounds": 2, "trialsPerTask": 2, "maxCalls": 72, "maxReservedUsd": 3,
+              "rounds": 2, "trialsPerTask": 2, "maxCalls": 72, "maxReservedUsd": cap_usd, "maxProposerTurns": 12,
               "scope": "Native proposer/schedule/history/aggregate/select_round with custom host domain and stricter guards. Not full Run or published benchmark reproduction.",
               "gate": "Strict development lift, no per-task regressions, complete known costs, API cost per success does not increase. Frozen confirmation used once after selection."}
     freeze["adapterSourceSha256"] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
@@ -102,7 +105,7 @@ def main():
         if time.monotonic() >= deadline or sequence >= 72:
             raise RuntimeError("runtime or call budget exhausted")
         ceiling = (len((prompt + system).encode()) + 4096) * prices[model]["prompt"] + 1800 * prices[model]["completion"]
-        if reserved + ceiling > 3:
+        if reserved + ceiling > cap_usd:
             raise RuntimeError("reservation denied")
         reserved += ceiling
         sequence += 1
@@ -173,7 +176,7 @@ def main():
     incumbent, policy, best = baseline, BASELINE, baseline.S
     history = History(args.out / "history.jsonl")
     cfg = RRSIConfig(T=2, k=2, m=1, b_min=1, b_max=1, delta=0)
-    proposer.MAX_TURNS = 6
+    proposer.MAX_TURNS = 12
     def generate(prompt, system=None, cache_prefix=None, **kwargs):
         return request("native-proposer", EDITOR, (cache_prefix or "") + "\n" + prompt, system or "")[0]
     proposer.generate = generate
@@ -205,6 +208,7 @@ def main():
             valid = valid and not any(task["id"] in candidate_policy for task in DEV+CONFIRM)
             if not valid:
                 rounds.append({"generation": generation, "proposal": proposal, "accepted": False, "reason": "proposal_contract"})
+                save("rounds.json", rounds)
                 continue
             ev, candidate_records = evaluate(candidate_policy, DEV, f"candidate-{generation}-development")
             candidate = Candidate(f"generation-{generation}", proposal["edits"], ev=ev)
