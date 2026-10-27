@@ -33,8 +33,8 @@ describe('upgrade adversarial boundaries', () => {
     const plan = await planUpgrade(dir,{'reviewer.md':sha256('Generated')});
     expect(plan.added).toEqual([]); expect(plan.changed).toEqual([]);
   });
-  it('keeps a conflicting security policy byte-for-byte even with default inline mode', async () => {
-    const dir = await fixture(); const path = '.harness/mcp-policy.json';
+  it.each(['.harness/mcp-policy.json', '.claude/settings.json'])('keeps conflicting active policy %s byte-for-byte even with default inline mode', async path => {
+    const dir = await fixture(); await mkdir(join(dir, path.split('/')[0]), {recursive:true});
     const current = '{"defaultDeny":true,"maxToolCallsPerTurn":2}';
     const incoming = '{"defaultDeny":true,"maxToolCallsPerTurn":8}';
     await writeFile(join(dir,path),current);

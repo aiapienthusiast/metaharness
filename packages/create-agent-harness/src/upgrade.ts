@@ -37,6 +37,11 @@ export interface UpgradePlan {
   }>;
 }
 
+/** Active authorization JSON must remain valid while conflicts await review. */
+export function requiresPolicyRejection(path: string): boolean {
+  return path === '.harness/mcp-policy.json' || path === '.claude/settings.json';
+}
+
 /** New overlay files must not follow user-created links outside the harness. */
 function checkUpgradePath(projectDir: string, path: string): void {
   const parts = path.split('/');
@@ -165,7 +170,7 @@ export async function applyPlan(
   // Preflight before writing any part of this plan, including .rej destinations.
   for (const path of [...plan.added, ...plan.changed.map(c => c.path)]) {
     checkUpgradePath(projectDir, path);
-    if (style === 'rej' || path === '.harness/mcp-policy.json') checkUpgradePath(projectDir, path + '.rej');
+    if (style === 'rej' || requiresPolicyRejection(path)) checkUpgradePath(projectDir, path + '.rej');
   }
 
   for (const path of plan.added) {
@@ -185,7 +190,7 @@ export async function applyPlan(
       modified.push(c.path);
     } else {
       // Never turn a user's active security policy into invalid JSON.
-      if (style === 'inline' && c.path !== '.harness/mcp-policy.json') {
+      if (style === 'inline' && !requiresPolicyRejection(c.path)) {
         const local = existsSync(target) ? await readFile(target, 'utf-8') : '';
         await writeFile(target, inlineConflictMarkers(local, upstream), 'utf-8');
       } else {

@@ -14,7 +14,7 @@
 import { resolve, join } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { planUpgrade, formatPlan, applyPlan } from './upgrade.js';
+import { planUpgrade, formatPlan, applyPlan, requiresPolicyRejection } from './upgrade.js';
 import { asFileMap } from './walker.js';
 import { templateDir, renderScaffold, type Host } from './index.js';
 import {
@@ -119,7 +119,7 @@ export async function upgradeCmd(args: string[]): Promise<SubcommandResult> {
   }
   const conflicts = plan.changed.filter(c => c.kind === 'conflict');
   const conflictDescription = conflictStyle === 'rej' ? '.rej files'
-    : conflicts.some(c => c.path === '.harness/mcp-policy.json')
+    : conflicts.some(c => requiresPolicyRejection(c.path))
       ? 'inline markers (security policy uses a .rej file)' : 'inline markers';
 
   if (!apply) {
