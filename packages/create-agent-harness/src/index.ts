@@ -70,6 +70,36 @@ const KERNEL_VERSION = resolveKernelVersion();
 export const HOSTS = ['claude-code', 'codex', 'pi-dev', 'hermes', 'openclaw', 'rvm', 'copilot', 'opencode', 'github-actions', 'prime-agent'] as const;
 export type Host = (typeof HOSTS)[number];
 
+// Dream Cycle 2026-10-20 (generator-genome) — the real `metaharness`-level
+// subcommand nouns, single-sourced so the "did you mean" guard below and the
+// usage text can't drift independently of `runMetaHarnessSubcommand`'s switch
+// (2026-08-27's gist found the usage text already missing 4 of these).
+export const METAHARNESS_VERBS = [
+  'analyze', 'genome', 'score', 'weight-eft', 'learn', 'redblue', 'flywheel', 'turn-credit', 'avo', 'proxy',
+] as const;
+
+// Words a CLI user reasonably expects to be a diagnostic/info subcommand,
+// not a project name — reproduced live 2026-10-20: each one silently
+// scaffolded a harness directory of that name and exited 0 instead of
+// erroring, because `runMetaHarnessSubcommand` returns null for anything it
+// doesn't recognize and `main()` falls through to the legacy bare-name
+// scaffold path with no reserved-word check. Deferred from 2026-08-27's
+// Dream Cycle ("doctor"/"diag" discovery) to this generator-genome slot.
+// Round 2 (same night, independent critic): the first 12 covered the
+// obvious diagnostic-sounding words, but left out 11 of the *generated
+// harness's own* real `harness <verb>` subcommands (subcommands.ts's
+// switch) — a user conflating `metaharness <verb>` with `harness <verb>`
+// hits the identical bug for any of these too; critic live-verified all 11
+// still silently scaffolded on the round-1 build. Folded in below rather
+// than spun into a separate follow-up, since it's the same fix, same file,
+// same guard, zero added risk.
+export const RESERVED_LOOKS_LIKE_A_COMMAND = new Set([
+  'doctor', 'diag', 'audit', 'validate', 'compare', 'repo-scorecard',
+  'mcp-scan', 'threat-model', 'sbom', 'secrets', 'help', 'version',
+  'verify', 'sign', 'federate', 'mcp', 'publish', 'upgrade', 'completions',
+  'analyze-repo', 'export-config', 'oia-manifest', 'plugin-init',
+]);
+
 export const TEMPLATES = [
   'minimal',
   'vertical:devops',
@@ -401,6 +431,11 @@ export class SessionLog {
   private nextIndex = new Map<string, number>();
   private branchParent = new Map<string, { branch: string; index: number }>();
   private rootBranch: string;
+  // Shared (by reference, like the collections above) across fork()
+  // siblings — serializes append()/fork() per LOG, not per instance, so
+  // concurrent unawaited calls on this instance or a sibling can never
+  // read-check-write on the same stale nextIndex (ADR-246 §2.3 TOCTOU fix).
+  private queue: { p: Promise<unknown> } = { p: Promise.resolve() };
 
   constructor(readonly path: string, readonly branch: string = 'main') {
     this.rootBranch = branch;
@@ -470,9 +505,29 @@ export class SessionLog {
     return errors;
   }
 
+  /** Run \`op\` after every previously enqueued operation on this log's shared
+   * queue has settled (success or failure), and chain forward the same way —
+   * serializes append()/fork() per LOG (not per instance) in call order. */
+  private enqueue<T>(op: () => Promise<T>): Promise<T> {
+    const result = this.queue.p.then(op, op);
+    this.queue.p = result.then(() => undefined, () => undefined);
+    return result;
+  }
+
   /** Append an event on the active branch (next monotonic index). The first
-   * event of a forked branch carries the fork's parent ref. */
+   * event of a forked branch carries the fork's parent ref. Safe to call
+   * without awaiting the previous call: concurrent appends on this instance
+   * (or a fork() sibling sharing this queue) are serialized via enqueue()
+   * and assigned distinct, monotonic indices in call order. */
   async append(kind: string, payload: unknown,
+      opts?: { parent?: { branch: string; index: number } }): Promise<SessionEvent> {
+    return this.enqueue(() => this.appendLocked(kind, payload, opts));
+  }
+
+  /** The unserialized body of append() — only ever runs for one caller at a
+   * time per shared queue, via enqueue(). fork() also runs its synthetic
+   * first event through this. */
+  private async appendLocked(kind: string, payload: unknown,
       opts?: { parent?: { branch: string; index: number } }): Promise<SessionEvent> {
     const index = this.nextIndex.get(this.branch) ?? 0;
     const parent = opts?.parent;
@@ -501,16 +556,22 @@ export class SessionLog {
    * Immediately appends the new branch's synthetic first event: index 0,
    * parent {branch: this.branch, index: atIndex}, kind 'fork', payload null. */
   async fork(atIndex: number, newBranch: string): Promise<SessionLog> {
-    const count = this.nextIndex.get(this.branch) ?? 0;
-    if (atIndex < 0 || atIndex >= count) throw new Error('session: cannot fork at index ' + atIndex);
-    if ((this.nextIndex.get(newBranch) ?? 0) > 0 || newBranch === this.branch) {
-      throw new Error('session: branch "' + newBranch + '" already exists');
-    }
-    const log = new SessionLog(this.path, newBranch);
-    log.events = this.events; log.nextIndex = this.nextIndex; log.branchParent = this.branchParent;
-    log.rootBranch = this.rootBranch;
-    await log.append('fork', null, { parent: { branch: this.branch, index: atIndex } });
-    return log;
+    // The "does newBranch already exist" check and the synthetic first event
+    // run inside ONE enqueue()'d operation: otherwise two concurrent fork()
+    // calls for the same new branch name could both pass the check before
+    // either's append() lands (the same TOCTOU shape as append(), one level up).
+    return this.enqueue(async () => {
+      const count = this.nextIndex.get(this.branch) ?? 0;
+      if (atIndex < 0 || atIndex >= count) throw new Error('session: cannot fork at index ' + atIndex);
+      if ((this.nextIndex.get(newBranch) ?? 0) > 0 || newBranch === this.branch) {
+        throw new Error('session: branch "' + newBranch + '" already exists');
+      }
+      const log = new SessionLog(this.path, newBranch);
+      log.events = this.events; log.nextIndex = this.nextIndex; log.branchParent = this.branchParent;
+      log.rootBranch = this.rootBranch; log.queue = this.queue;
+      await log.appendLocked('fork', null, { parent: { branch: this.branch, index: atIndex } });
+      return log;
+    });
   }
 
   private lineage(branch: string): SessionEvent[] {
@@ -561,6 +622,23 @@ export interface ScaffoldResult {
  * template variables (should be empty for a clean run).
  */
 
+/**
+ * ADR-022's exact safe-default MCP policy object. Every capability starts at
+ * its safe value — the author opts INTO risk, never out of safety.
+ */
+function defaultMcpPolicy(): Record<string, unknown> {
+  return {
+    defaultDeny: true,
+    allowNetwork: false,
+    allowShell: false,
+    allowFileWrite: false,
+    requireApprovalForDangerous: true,
+    toolTimeoutMs: 30000,
+    maxToolCallsPerTurn: 8,
+    auditLog: true,
+  };
+}
+
 /** Standard MIT license text for a scaffolded harness (GH #23). */
 function mitLicense(name: string): string {
   const year = new Date().getFullYear();
@@ -588,7 +666,8 @@ SOFTWARE.
 `;
 }
 
-export async function scaffold(opts: ScaffoldOptions): Promise<ScaffoldResult> {
+/** Render the same host and security overlays for creation and upgrade. */
+export async function renderScaffold(opts: ScaffoldOptions) {
   const nameCheck = validateHarnessName(opts.name);
   if (!nameCheck.valid) {
     throw new Error(`invalid harness name: ${nameCheck.reason}`);
@@ -673,6 +752,48 @@ export async function scaffold(opts: ScaffoldOptions): Promise<ScaffoldResult> {
     rendered.push({ path: 'LICENSE', content: mitLicense(opts.name), rendered: false, unresolved: [] });
   }
 
+  // Dream Cycle 2026-10-18 (security-adversarial, closes a gap disclosed-but-
+  // not-fixed on 2026-09-08, issue #297): ADR-022 is Accepted and specifies
+  // that `local`/`remote` MCP mode ships a default-deny `.harness/mcp-policy.json`
+  // alongside the MCP registration, and that `off` mode nulls the policy —
+  // "off" is a first-class mode (ADR-022 Consequences), so emission must stay
+  // keyed to whether this harness actually registers an MCP server, not
+  // unconditional. Every one of today's 20 templates' `.claude/settings.json.tmpl`
+  // happens to register one (`mcp: 'local'` is effectively hardcoded at the
+  // hostConfigFiles call above — there is no `--mcp off` flag yet), so this
+  // reads as "always emit" today, but keying it to the real rendered output
+  // keeps the invariant correct if/when a no-MCP template or `--mcp off` is
+  // added, rather than baking in today's accident as tomorrow's bug.
+  {
+    const settingsIdx = rendered.findIndex(r => r.path === '.claude/settings.json');
+    let mcpRegistered = rendered.some(r => r.path === '.mcp.json');
+    if (!mcpRegistered && settingsIdx !== -1) {
+      try {
+        const settings = JSON.parse(rendered[settingsIdx]!.content) as { mcpServers?: Record<string, unknown> };
+        mcpRegistered = !!(settings.mcpServers && Object.keys(settings.mcpServers).length > 0);
+      } catch { /* unparseable settings.json: treat as not registered, nothing to do */ }
+    }
+    // Native host formats also register MCP without a Claude settings file.
+    mcpRegistered ||= rendered.some(file => {
+      if (file.path === '.codex/config.toml') return /^\[mcp_servers\./m.test(file.content);
+      if (file.path.startsWith('optional-mcps/') && file.path.endsWith('.json')) return true;
+      if (!['.openclaw/openclaw.json', '.vscode/mcp.json', '.opencode/opencode.json'].includes(file.path)) return false;
+      try {
+        const config = JSON.parse(file.content);
+        const servers = config.mcp?.servers ?? config.mcpServers ?? config.servers ?? config.mcp;
+        return !!servers && Object.keys(servers).length > 0;
+      } catch { return false; }
+    });
+    if (mcpRegistered && !rendered.some(r => r.path === '.harness/mcp-policy.json')) {
+      rendered.push({
+        path: '.harness/mcp-policy.json',
+        content: JSON.stringify(defaultMcpPolicy(), null, 2) + '\n',
+        rendered: false,
+        unresolved: [],
+      });
+    }
+  }
+
   // ADR-147: deep-integrate Darwin Mode. Default ON (opt out with --no-darwin).
   // Adds the @metaharness/darwin devDependency + `evolve`/`evolve:dry` scripts to
   // the generated package.json, and emits a real `evolve` skill wired to the darwin
@@ -737,15 +858,22 @@ export async function scaffold(opts: ScaffoldOptions): Promise<ScaffoldResult> {
   // avoiding the implicit database reopen and Sybil-prone caller-id patterns
   // found during the discovery benchmark.
   if (opts.fieldMemory === true) {
+    integrateFieldMemory(rendered);
+  }
+
+  return { rendered, vars, hostSet };
+}
+
+export async function scaffold(opts: ScaffoldOptions): Promise<ScaffoldResult> {
+  if (opts.fieldMemory === true) {
     const existingModule = join(opts.targetDir, ...FIELD_MEMORY_MODULE_PATH.split('/'));
     if (existsSync(existingModule)) {
       throw new Error(
         `--field-memory refuses to overwrite existing ${FIELD_MEMORY_MODULE_PATH}`,
       );
     }
-    integrateFieldMemory(rendered);
   }
-
+  const { rendered, vars, hostSet } = await renderScaffold(opts);
   const fileMap = asFileMap(rendered);
 
   // iter 58: stamp kernel_version at scaffold time (ADR-027 diagnostic).
@@ -755,6 +883,7 @@ export async function scaffold(opts: ScaffoldOptions): Promise<ScaffoldResult> {
     meta: KERNEL_VERSION ? { kernel_version: KERNEL_VERSION } : {},
   });
   manifest.vars = vars;
+  manifest.features = { darwin: opts.darwin !== false, sessions: opts.sessions === true };
   manifest.hosts = hostSet; // GH #10: full host set, not just the primary
   if (opts.fieldMemory === true) {
     manifest.field_memory = fieldMemoryManifest();
@@ -985,6 +1114,15 @@ export async function main(argv: string[]): Promise<number> {
 
   const args = parseArgs(argv);
 
+  // See RESERVED_LOOKS_LIKE_A_COMMAND above. `--force` still lets someone
+  // scaffold a project literally named e.g. "doctor" on purpose.
+  if (first !== 'new' && args.name && !args.force && RESERVED_LOOKS_LIKE_A_COMMAND.has(args.name)) {
+    console.error(`"${args.name}" looks like a command, not a project name — it is not a recognized metaharness subcommand.`);
+    console.error(`Known subcommands: ${METAHARNESS_VERBS.join(', ')}`);
+    console.error(`To scaffold a project literally named "${args.name}" anyway, re-run with --force.`);
+    return 2;
+  }
+
   if (args.list) {
     for (const line of formatCatalog(loadCatalog())) console.log(line);
     return 0;
@@ -1047,6 +1185,10 @@ export async function main(argv: string[]): Promise<number> {
     console.log('       npx metaharness analyze <repo>           (recommend a harness plan, no-exec)');
     console.log('       npx metaharness genome <repo>            (7-section repo readiness)');
     console.log('       npx metaharness learn --host <h> --model <m> --slice <manifest>   (ADR-228 GEPA learning run — $0 dry-run by default, --run to spend; needs a repo checkout)');
+    console.log('       npx metaharness weight-eft <export|train|eval|status>   (ADR-198 evolutionary fine-tuning; $0 export/dry-run, GPU-gated --train)');
+    console.log('       npx metaharness redblue <init|run|attack|patch|retest|report>   (adversarial red/blue eval of an agent/workflow you own; $0 with --mock-judge)');
+    console.log('       npx metaharness flywheel <run|replay|graph>   (promotion loop: run/measure/mutate/verify/promote; replay/graph are read-only)');
+    console.log('       npx metaharness turn-credit <process|report>   (ADR-248 offline recursive turn-level credit from recorded trajectories)');
     console.log('       npx metaharness avo <trusted-key|gate-build|gate-submit>  (ADR-271 flywheel-gate receipts from an AVO run summary)');
     console.log('       npx metaharness proxy <install|status|start|stop|enable|disable|path|login|logout>  (optional signed Cognitum Meta-Proxy sidecar)');
     console.log('       npx metaharness --from-existing [./path]');

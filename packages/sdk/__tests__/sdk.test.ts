@@ -67,6 +67,12 @@ describe('defineTool', () => {
       name: 'x', server: 's', description: 'd', inputSchema: null as unknown as Record<string, unknown>,
     })).toThrow();
   });
+
+  it('rejects non-kebab-case names', () => {
+    expect(() => defineTool({
+      name: 'Bad Name', server: 's', description: 'd', inputSchema: { type: 'object' },
+    })).toThrow(/kebab-case/);
+  });
 });
 
 describe('defineMcpServer', () => {
@@ -83,6 +89,10 @@ describe('defineMcpServer', () => {
   it('rejects neither and both', () => {
     expect(() => defineMcpServer({ name: 'x' })).toThrow(/either command or url/);
     expect(() => defineMcpServer({ name: 'x', command: ['y'], url: 'https://z' })).toThrow(/cannot have both/);
+  });
+
+  it('rejects non-kebab-case names', () => {
+    expect(() => defineMcpServer({ name: 'Bad Name', url: 'https://z' })).toThrow(/kebab-case/);
   });
 });
 
@@ -104,21 +114,39 @@ describe('defineHarness', () => {
   it('detects agent name collision', () => {
     const a1 = defineAgent({ name: 'dup', systemPrompt: 'p', tier: 'small' });
     const a2 = defineAgent({ name: 'dup', systemPrompt: 'q', tier: 'frontier' });
-    expect(() => defineHarness({ name: 'h', agents: [a1, a2] })).toThrow(/agent name collision/);
+    expect(() => defineHarness({ name: 'h', description: 'd', agents: [a1, a2] })).toThrow(/agent name collision/);
   });
 
   it('detects skill name collision', () => {
     const s1 = defineSkill({ name: 'dup', description: 'd', body: 'b' });
     const s2 = defineSkill({ name: 'dup', description: 'd2', body: 'b2' });
-    expect(() => defineHarness({ name: 'h', skills: [s1, s2] })).toThrow(/skill name collision/);
+    expect(() => defineHarness({ name: 'h', description: 'd', skills: [s1, s2] })).toThrow(/skill name collision/);
+  });
+
+  it('detects tool name collision', () => {
+    const t1 = defineTool({ name: 'dup', server: 's', description: 'd', inputSchema: { type: 'object' } });
+    const t2 = defineTool({ name: 'dup', server: 's2', description: 'd2', inputSchema: { type: 'object' } });
+    expect(() => defineHarness({ name: 'h', description: 'd', tools: [t1, t2] })).toThrow(/tool name collision/);
+  });
+
+  it('detects mcp server name collision', () => {
+    const m1 = defineMcpServer({ name: 'dup', url: 'https://a' });
+    const m2 = defineMcpServer({ name: 'dup', url: 'https://b' });
+    expect(() => defineHarness({ name: 'h', description: 'd', mcpServers: [m1, m2] })).toThrow(/mcp server name collision/);
   });
 
   it('rejects harness with bad name', () => {
-    expect(() => defineHarness({ name: 'BadName' })).toThrow(/kebab-case/);
+    expect(() => defineHarness({ name: 'BadName', description: 'd' })).toThrow(/kebab-case/);
+  });
+
+  it('preserves optional descriptions but rejects explicitly empty descriptions', () => {
+    expect(defineHarness({ name: 'h' }).description).toBeUndefined();
+    expect(() => defineHarness({ name: 'h', description: '' })).toThrow(/description/);
+    expect(() => defineHarness({ name: 'h', description: '   ' })).toThrow(/description/);
   });
 
   it('defaults all optional sections to empty arrays', () => {
-    const h = defineHarness({ name: 'h' });
+    const h = defineHarness({ name: 'h', description: 'd' });
     expect(h.agents).toEqual([]);
     expect(h.skills).toEqual([]);
     expect(h.tools).toEqual([]);
