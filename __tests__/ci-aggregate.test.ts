@@ -2,7 +2,7 @@ import {readFileSync} from 'node:fs';
 import {execSync} from 'node:child_process';
 import {describe, it, expect} from 'vitest';
 
-const workflow = readFileSync('.github/workflows/ci.yml','utf8');
+const workflow = readFileSync('.github/workflows/ci.yml','utf8').replace(/\r\n/g,'\n');
 const aggregate = workflow.match(/^  ci-pass:\n([\s\S]*?)(?=^  [\w-]+:|$(?![\s\S]))/m)?.[1] ?? '';
 describe('CI aggregate result', () => {
   it('waits for every other CI job, including Dream journeys and neural tests', () => {
