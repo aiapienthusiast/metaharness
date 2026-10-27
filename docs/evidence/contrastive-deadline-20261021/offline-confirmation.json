@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "evidenceKind": "offline-contract-validation",
+  "frozenSha256": "6a0376d9a5b1766096986bb0b87f65f2fc4c2808d3260ea9fb27027952103c92",
+  "development": 24,
+  "confirmation": 40,
+  "disjointNormalizedUtterances": true,
+  "fakeExperimentCalls": 165,
+  "providerMockCalls": 16,
+  "maxConcurrentMockCalls": 4,
+  "realProviderCalls": 0,
+  "realSpendUsd": 0
+}

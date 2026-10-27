@@ -54,6 +54,8 @@ export interface HarnessManifest {
   vars: TemplateVars;
   /** Host adapters bundled. */
   hosts: string[];
+  /** Generator overlays retained by upgrade; absent in legacy manifests. */
+  features?: { darwin: boolean; sessions: boolean };
   /** Governed attractor-field integration, present only when opted in. */
   field_memory?: HarnessFieldMemory;
   /** Per-rendered-file sha256, so `harness upgrade` can detect divergence. */
