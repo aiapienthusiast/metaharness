@@ -52,6 +52,36 @@ def digest(value):
     return hashlib.sha256(encoded(value).encode()).hexdigest()
 
 
+
+def actor_trial(text, worker, inputs):
+    """Fail closed on output-contract and worker failures; never retry or repair output."""
+    try:
+        value = json.loads(text)
+        source = value.get("source") if isinstance(value, dict) else None
+        if not isinstance(source, str) or not source.strip() or len(source) > 100_000:
+            raise ValueError("invalid source")
+    except (ValueError, TypeError):
+        return "", {"ok": False, "kind": "actor_contract_failed"}
+    try:
+        proc = subprocess.run(["python3", "-I", str(worker)],
+            input=json.dumps({"source": source, "inputs": inputs}),
+            text=True, capture_output=True, timeout=4,
+            env={"PATH": "/usr/bin:/bin", "LANG": "C.UTF-8"})
+        output = json.loads(proc.stdout)
+        if proc.returncode or not isinstance(output, dict):
+            raise ValueError("invalid worker response")
+        if output.get("ok") and (not isinstance(output.get("results"), list)
+                or not isinstance(output.get("inputUnchanged"), list)
+                or len(output["results"]) != len(inputs)
+                or len(output["inputUnchanged"]) != len(inputs)):
+            raise ValueError("incomplete worker response")
+        return source, output
+    except subprocess.TimeoutExpired:
+        return source, {"ok": False, "kind": "worker_timeout"}
+    except (ValueError, OSError):
+        return source, {"ok": False, "kind": "worker_failed"}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("rrsi_root", type=Path)
@@ -148,24 +178,17 @@ def main():
             for trial in range(2):
                 text, call = request(f"{label}:{task['id']}:{trial}", ACTOR,
                                      actor_contract + "\nReusable harness guidance:\n" + policy + "\nTask:\n" + task["spec"])
-                source = json.loads(text).get("source", "")
-                proc = subprocess.run(["python3", "-I", str(args.worker)],
-                    input=json.dumps({"source": source, "inputs": [c[0] for c in task["cases"]]}),
-                    text=True, capture_output=True, timeout=4,
-                    env={"PATH": "/usr/bin:/bin", "LANG": "C.UTF-8"})
-                try:
-                    output = json.loads(proc.stdout)
-                except Exception:
-                    output = {"ok": False, "kind": "worker_failed"}
+                source, output = actor_trial(text, args.worker, [c[0] for c in task["cases"]])
                 checks = [encoded(r) == encoded(c[1]) and output["inputUnchanged"][i]
                           for i, (r, c) in enumerate(zip(output.get("results", []), task["cases"]))] if output.get("ok") else []
                 passed = len(checks) == len(task["cases"]) and all(checks)
                 artifact = f"artifact-{call['sequence']:03}.py"
                 (args.out / artifact).write_text(source)
                 call.update(artifact=artifact, sourceDigest=hashlib.sha256(source.encode()).hexdigest())
+                save("calls.json", ledger)
                 rewards.append(float(passed)); token_counts.append(call["tokens"]); costs.append(call["costUsd"])
                 runs.append({"source": source, "strictSuccess": passed, "passedChecks": sum(checks),
-                             "totalChecks": len(task["cases"]), "safetyViolation": output.get("kind") == "language_rejected"})
+                             "totalChecks": len(task["cases"]), "failureKind": output.get("kind") if not output.get("ok") else None, "safetyViolation": output.get("kind") == "language_rejected"})
             per_task[task["id"]] = TaskResult(rewards=rewards, tokens=token_counts)
             records[task["id"]] = {"spec": task["spec"], "runs": runs}
         ev = aggregate(label, 2, per_task, {"apiCostUsd": sum(costs), "safetyViolation": any(r["safetyViolation"] for t in records.values() for r in t["runs"])})

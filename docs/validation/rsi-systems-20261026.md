@@ -42,3 +42,17 @@ python3 packages/flywheel/scripts/verify-native-rrsi-evidence.py \
 Expected: verified true, passes 2, incompletePasses 1, calls 55, reexecutedTrials 32, acceptedDevelopmentChanges 0, apiCostUsd 0.0743810661.
 
 Next integration priority is robust actor output handling with failed trials retaining charges, followed by an independently frozen, larger comparison against the unchanged harness under equal total budgets. Native RRSI components should stay experimental until that comparison shows fresh strict success gains without regressions at acceptable total cost. Unit test success and proposal generation are insufficient evidence to switch approaches.
+
+## Follow through: observed failure repair and Memento assessment
+
+The adapter now treats malformed JSON, invalid source contracts, worker timeout and malformed worker results as failed trials without retry or output repair. Every generated artifact is followed by an immediate ledger save. Provider charges were recorded before parsing and remain counted. Five regression tests cover the retained response 019, invalid types, continuation after failure, real worker execution, forbidden imports and worker failures. This change does not retroactively complete either archived pass. No additional paid calls were made.
+
+```sh
+python3 packages/flywheel/scripts/test-native-rrsi-contract.py
+```
+
+Memento 3 source: https://arxiv.org/html/2610.11794v1 . Its closest comparator already clears all 25 public games at 99.0 RHAE versus 100.0. Both use all public games; completion is therefore not a discriminator. The authors acknowledge model choice, reasoning budget, repeated stability and unseen evaluation matter. The rulebook ablation covers three games. No author linked implementation release was located in the inspected paper or targeted search. Do not mistake an unrelated Memento repository for this implementation.
+
+Next experimental design, not an executed capability claim: compare unchanged MetaHarness, code model with replay, and rulebook plus code model with replay. Freeze the solver, total token and execution budget, action budget and environment families. The proposer sees only development transitions; a separate evaluator retains unseen environments. Log all failed calls and search overhead. Require at least 10% relative strict completion lift with no task family regression and known total costs before considering retention. Keep multiple replay consistent hypotheses until an observation distinguishes them: exact replay of past observations cannot establish generalization.
+
+For deployment, the useful target is fewer failed tool actions on recurring workflows, measured against the unchanged harness. A public game ceiling score alone supplies no business performance guarantee.
