@@ -41,9 +41,13 @@ describe('generated user journey', () => {
       args = JSON.parse(/args = (\[[^\n]+\])/.exec(config)![1]);
     } else if (host === 'opencode') {
       [command, ...args] = (await json(dir, '.opencode/opencode.json')).mcp['journey-bot'].command;
+    } else if (host === 'hermes') {
+      const config = await readFile(join(dir, 'cli-config.yaml'), 'utf8');
+      const server = JSON.parse(config.split('mcp_servers:\n')[1].trim().slice('journey-bot: '.length));
+      ({command, args} = server);
     } else {
-      const config = await json(dir, host === 'hermes' ? 'optional-mcps/journey-bot.json' : host === 'copilot' ? '.vscode/mcp.json' : '.openclaw/openclaw.json');
-      const server = host === 'hermes' ? config['journey-bot'] : host === 'copilot' ? config.servers['journey-bot'] : config.mcp.servers['journey-bot'];
+      const config = await json(dir, host === 'copilot' ? '.vscode/mcp.json' : '.openclaw/openclaw.json');
+      const server = host === 'copilot' ? config.servers['journey-bot'] : config.mcp.servers['journey-bot'];
       ({command, args} = server);
     }
     expect(command).toBe('node');
@@ -53,6 +57,13 @@ describe('generated user journey', () => {
       await client.connect(new StdioClientTransport({command, args, cwd: dir}));
       expect((await client.listTools()).tools.map(t => t.name)).toEqual(['harness_info']);
     } finally { await client.close(); }
+  });
+
+  it.each([{hosts:['copilot','hermes'] as Host[]},{hosts:['hermes','copilot'] as Host[]}])('retains separate Hermes and sibling host setup guides for %j', async ({hosts}) => {
+    const dir = await mkdtemp(join(tmpdir(),'multi-host-guides-')); roots.push(dir);
+    await scaffold({name:'journey-bot',template:'minimal',hosts,targetDir:dir,force:true,generatorVersion:'test',darwin:false});
+    expect(await readFile(join(dir,'install-hermes.md'),'utf8')).toContain('$HERMES_HOME/config.yaml');
+    expect(await readFile(join(dir,'install.md'),'utf8')).toContain('Copilot');
   });
 
   it('rejects malformed protocol input and bounds complete and incomplete messages', async () => {

@@ -136,9 +136,10 @@ export function hostConfigFiles(host: string, cfg: HostConfigInput): HostFile[] 
       // `model:` + `agent.personalities` schema; no name/description/scrub keys.
       const persona = (cfg.description || `You are ${cfg.name}.`).replace(/[\r\n]+/g, ' ');
       const files: HostFile[] = [
-        { path: 'cli-config.yaml', content: `# Hermes Agent config for ${cfg.name} — subset of cli-config.yaml.example.\nmodel:\n  provider: "auto"\nagent:\n  personalities:\n    ${yamlKey(cfg.name)}: ${JSON.stringify(persona)}\n` },
+        { path: 'cli-config.yaml', content: `# Hermes Agent config for ${cfg.name} — subset of cli-config.yaml.example.\nmodel:\n  provider: "auto"\nagent:\n  personalities:\n    ${yamlKey(cfg.name)}: ${JSON.stringify(persona)}\n${server ? `mcp_servers:\n  ${yamlKey(cfg.name)}: ${JSON.stringify(server)}\n` : ''}` },
       ];
       if (server) files.push({ path: `optional-mcps/${cfg.name}.json`, content: JSON.stringify({ [cfg.name]: server }, null, 2) + '\n' });
+      files.push({path:'install-hermes.md',content:`# Installing ${cfg.name} into Hermes\n\nHermes reads \`$HERMES_HOME/config.yaml\` (normally \`~/.hermes/config.yaml\`), not this folder automatically. Copy \`cli-config.yaml\` into a new isolated profile as \`config.yaml\`, or review and merge its personality and \`mcp_servers\` entries into your existing configuration. Preserve existing configuration and credentials. Start Hermes from this harness directory so relative stdio paths resolve; use an absolute server path when launching elsewhere. The optional-mcps export alone does not enable the server.\n`});
       return files;
     }
 
