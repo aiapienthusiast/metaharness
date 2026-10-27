@@ -23,7 +23,7 @@ SAFE_BUILTINS = {
 }
 METHODS = {"append", "extend", "sort", "reverse", "get", "items", "keys", "values",
            "strip", "lower", "upper", "split", "isdigit", "startswith", "endswith",
-           "add", "discard", "pop", "copy", "count", "index", "remove", "isascii"}
+           "add", "discard", "pop", "copy", "count", "index", "remove", "isascii", "join", "setdefault"}
 NODES = {
     "Module", "FunctionDef", "arguments", "arg", "Return", "If", "For", "While",
     "Break", "Continue", "Pass", "Assign", "AnnAssign", "AugAssign", "Expr",
