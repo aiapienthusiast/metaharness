@@ -344,11 +344,11 @@ describe('installScript shell-escaping (Dream Cycle 2026-08-24)', () => {
       const evil = `x\ntouch ${marker}\n#`;
       const s = installScript({ name: evil });
       expect(s.split('\n')[1]).toBe(`# RVM install runbook for harness: x touch ${marker} #`);
-      try {
-        execFileSync('bash', ['-c', s], { stdio: 'pipe' });
-      } catch {
-        // rvm-loader is absent in this environment — expected to fail later.
-      }
+      // Keep the real shell/injection check, but stub the loader so this test
+      // cannot download/build an unrelated toolchain with `cargo install`.
+      execFileSync('bash', ['-c', 'rvm-loader() { return 0; }\n' + s], {
+        stdio: 'pipe', timeout: 2000,
+      });
       expect(existsSync(marker)).toBe(false);
     } finally {
       if (existsSync(marker)) rmSync(marker);

@@ -241,3 +241,7 @@ changing the official Python bridge or receipt format.
 2. NVIDIA, “NVIDIA AVO Reaches 100% on ARC-AGI-3,” 2026-08-21.
 3. ARC Prize, “ARC-AGI-3 Scoring Methodology.”
 4. OpenAI, “ChatGPT Developer mode” and “Working with evals.”
+
+## Consequences
+
+The implementation adds explicit evidence and validation requirements. Its results remain bounded by the experimental scope and limitations described above; they do not authorize automatic production promotion.

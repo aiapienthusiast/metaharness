@@ -1,0 +1,82 @@
+name: Dream release
+on:
+  push:
+    tags: ['dream-v*.*.*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Merged Dream release tag (dream-vX.Y.Z)'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: dream-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: read
+      id-token: write
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify merged source and exact-SHA CI
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^dream-v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test "$(git rev-parse HEAD)" = "$(git rev-parse "$RELEASE_TAG^{commit}")"
+          git merge-base --is-ancestor HEAD origin/main
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const p=JSON.parse(readFileSync('packages/create-agent-harness/package.json')); if(process.env.RELEASE_TAG !== 'dream-v'+p.version) throw Error('tag/package version mismatch');"
+          for workflow in ci.yml security.yml; do
+            conclusion=$(gh run list --workflow "$workflow" --commit "$(git rev-parse HEAD)" --event push --limit 1 --json conclusion --jq '.[0].conclusion')
+            test "$conclusion" = success
+          done
+          test "$(gh issue list --label release-blocker --state open --json number --jq length)" = 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          registry-url: https://registry.npmjs.org
+      - name: Build, test, audit, and seal packages
+        run: |
+          npm ci --ignore-scripts
+          npm run build
+          npx vitest run --maxWorkers=2
+          node --test packages/darwin-mode/bench/swebench/cost-guard.test.mjs
+          npm audit --audit-level=moderate
+          node scripts/dream-release.mjs pack
+          node scripts/dream-release.mjs smoke
+          node bench/dream/canonicalization.mjs > dist-release/benchmark.json
+      - uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_WIF_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/get-secretmanager-secrets@2b5f97c5a4b9c105e64646762ad4fc3f5128e6f5
+        id: secrets
+        with:
+          secrets: |-
+            npm_token:${{ vars.GCP_PROJECT_ID }}/NPM_TOKEN
+      - name: Publish sealed npm artifacts and verify public bytes
+        run: node scripts/dream-release.mjs publish
+        env:
+          NODE_AUTH_TOKEN: ${{ steps.secrets.outputs.npm_token }}
+      - name: Create GitHub release and verify downloaded artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "$RELEASE_TAG" --verify-tag --title 'MetaHarness 0.4.18 — Dream integration and security fixes' --notes-file docs/releases/dream-v0.4.18.md dist-release/*.tgz dist-release/dream-artifacts.json dist-release/benchmark.json
+          mkdir -p /tmp/dream-public
+          gh release download "$RELEASE_TAG" --dir /tmp/dream-public
+          for artifact in dist-release/*.tgz dist-release/dream-artifacts.json; do
+            cmp "$artifact" "/tmp/dream-public/$(basename "$artifact")"
+          done

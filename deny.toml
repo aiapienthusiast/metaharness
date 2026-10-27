@@ -44,3 +44,7 @@ highlight = "all"
 unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+
+# Temporary, immutable upstream ZIP 9 fix; see poker-darwin/Cargo.toml.
+allow-git = ["https://github.com/huggingface/candle"]
+required-git-spec = "rev"
