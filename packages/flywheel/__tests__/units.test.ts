@@ -581,6 +581,20 @@ describe('verifyReplayBundle — sealedFieldsAuthentic: signed scores must match
     expect(v.checks.sealedFieldsAuthentic).toBe(false); // bSpliced.receipt.payload.parents (['root-elsewhere']) != live parents (['a1'])
     expect(v.pass).toBe(false);
   });
+
+  it.each([NaN, Infinity, -Infinity])('refuses non-JSON numeric receipts (%s)', (value) => {
+    expect(() => canon(value)).toThrow(/non-finite/);
+    expect(() => signer.sign({ primaryDelta: value })).toThrow(/non-finite/);
+    const receipt = signer.sign({ primaryDelta: null });
+    expect(verifyReceipt(JSON.parse(JSON.stringify(receipt)))).toBe(true);
+    expect(verifyReceipt({ ...receipt, payload: { primaryDelta: value } })).toBe(false);
+  });
+
+  it('preserves signed finite payloads through JSON transport', () => {
+    const receipt = signer.sign({ primaryDelta: 0.1, nested: { b: [1, null], a: 'ok' } });
+    expect(verifyReceipt(JSON.parse(JSON.stringify(receipt)))).toBe(true);
+  });
+
 });
 
 describe('analyzeBundle — F-P2 mutation-effectiveness', () => {

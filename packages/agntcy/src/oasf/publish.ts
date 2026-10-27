@@ -229,7 +229,6 @@ function projectAnnotations(record: OasfRecord): Record<string, string> {
 function withServerAddress(config: Config, serverAddress: string): Config {
   return new Config(
     serverAddress,
-    config.dirctlPath,
     config.spiffeEndpointSocket,
     config.authMode,
     config.jwtAudience,
@@ -247,7 +246,6 @@ function withServerAddress(config: Config, serverAddress: string): Config {
     config.oidcAuthTimeout,
     config.oidcScopes,
     config.oidcAccessToken,
-    config.dockerConfig,
   );
 }
 

@@ -1,0 +1,17 @@
+[skill]
+name = "list-templates"
+version = "0.1.0"
+description = "List the available MetaHarness templates and supported hosts without creating files."
+author = "rUv <ruv@ruv.net>"
+license = "MIT"
+
+[dispatch]
+type = "shell"
+command = "npx metaharness --list"
+
+[command]
+name = "list-templates"
+synopsis = "Show available harness templates."
+
+[catalog]
+tags = ["templates", "catalog", "metaharness"]
