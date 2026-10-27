@@ -90,3 +90,19 @@ See the ADRs: `docs/adrs/ADR-186…188`.
 
 > Default build is pure Rust (no heavy/native deps) so it stays fast and
 > wasm-safe. The `ruvector` / `neural` / `realgames` integrations are opt-in.
+
+## Neural build toolchain and ZIP security fix
+
+The default workspace retains Rust 1.88. The optional `neural` feature (and
+`full`, which includes it) is qualified with Rust 1.99.1 because the updated
+Candle implementation uses newer stable x86 intrinsics. Use an explicit override:
+
+```sh
+rustup toolchain install 1.99.1 --profile minimal
+cargo +1.99.1 test -p poker-darwin --lib --features neural --jobs 2
+```
+
+Candle core and NN are temporarily pinned to the same reviewed commit from
+[huggingface/candle#4041](https://github.com/huggingface/candle/pull/4041), which
+upgrades ZIP to version 9 and adapts its filename API. Replace this pin with a
+registry release containing the fix when available; do not reintroduce ZIP 8.

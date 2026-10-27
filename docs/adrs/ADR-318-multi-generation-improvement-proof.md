@@ -233,3 +233,7 @@ The PR may advance for review when:
 5. no existing promotion or authority rule is weakened.
 
 A merge of this verifier would still not establish RSI. Real proof requires the separate sealed behavioral experiment described above.
+
+## Consequences
+
+The implementation adds explicit evidence and validation requirements. Its results remain bounded by the experimental scope and limitations described above; they do not authorize automatic production promotion.
