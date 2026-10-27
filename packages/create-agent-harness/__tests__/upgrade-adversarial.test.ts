@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import {afterEach, describe, expect, it} from 'vitest';
-import {mkdtemp, mkdir, writeFile, readFile, rm, symlink} from 'node:fs/promises';
+import {mkdtemp, mkdir, writeFile, readFile, rm, symlink, link, stat, utimes} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {planUpgrade, applyPlan} from '../src/upgrade.js';
@@ -14,6 +14,39 @@ async function fixture(files: Record<string,string> = {}) {
   return dir;
 }
 describe('upgrade adversarial boundaries', () => {
+  it('preserves edited rejection work before applying any other file', async () => {
+    const dir = await fixture();
+    await writeFile(join(dir,'policy.json'),'Local policy');
+    const contents = {'added.md':'New', 'policy.json':'Upstream'};
+    const plan = await planUpgrade(dir, Object.fromEntries(Object.entries(contents).map(([p,c]) => [p,sha256(c)])));
+    // Another writer can create the proposal after planning.
+    await writeFile(join(dir,'policy.json.rej'),'Manual merge work');
+    await expect(applyPlan(dir,plan,contents)).rejects.toThrow('rejection');
+    expect(await readFile(join(dir,'policy.json.rej'),'utf8')).toBe('Manual merge work');
+    expect(await readFile(join(dir,'policy.json'),'utf8')).toBe('Local policy');
+    await expect(readFile(join(dir,'added.md'))).rejects.toMatchObject({code:'ENOENT'});
+  });
+  it('leaves an identical existing proposal untouched on repeated upgrade', async () => {
+    const dir = await fixture();
+    await writeFile(join(dir,'policy.json'),'Local policy');
+    const contents = {'policy.json':'Upstream'};
+    const plan = await planUpgrade(dir, {'policy.json':sha256('Upstream')});
+    await applyPlan(dir,plan,contents);
+    await utimes(join(dir,'policy.json.rej'), new Date('2000-01-01'), new Date('2000-01-01'));
+    const before = await stat(join(dir,'policy.json.rej'));
+    await applyPlan(dir,plan,contents);
+    expect((await stat(join(dir,'policy.json.rej'))).mtimeMs).toBe(before.mtimeMs);
+    expect(await readFile(join(dir,'policy.json'),'utf8')).toBe('Local policy');
+  });
+  it('refuses a hard-linked rejection file without touching its other name', async () => {
+    const dir = await fixture(); const outside = await fixture();
+    await writeFile(join(outside,'owned.md'),'User work');
+    await writeFile(join(dir,'policy.json'),'Local policy');
+    await link(join(outside,'owned.md'),join(dir,'policy.json.rej'));
+    const plan = await planUpgrade(dir, {'policy.json':sha256('Upstream')});
+    await expect(applyPlan(dir,plan,{'policy.json':'Upstream'})).rejects.toThrow('rejection');
+    expect(await readFile(join(outside,'owned.md'),'utf8')).toBe('User work');
+  });
   it('creates directories absent from an older scaffold', async () => {
     const dir = await fixture();
     const contents = {'agents/reviewer.md':'New generated reviewer'};

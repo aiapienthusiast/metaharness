@@ -166,11 +166,39 @@ export async function applyPlan(
 ): Promise<string[]> {
   const modified: string[] = [];
   const style = opts.conflictStyle ?? 'inline';
+  const proposals = new Map<string, string>();
 
   // Preflight before writing any part of this plan, including .rej destinations.
   for (const path of [...plan.added, ...plan.changed.map(c => c.path)]) {
     checkUpgradePath(projectDir, path);
     if (style === 'rej' || requiresConfigRejection(path)) checkUpgradePath(projectDir, path + '.rej');
+  }
+
+  // Reject collisions before modifying any active/generated files. Never truncate
+  // earlier proposals: they may contain a user's unfinished merge work.
+  for (const c of plan.changed) {
+    if (c.kind !== 'conflict' || (style !== 'rej' && !requiresConfigRejection(c.path))) continue;
+    const path = c.path + '.rej';
+    const target = join(projectDir, ...path.split('/'));
+    const upstream = newContents[c.path] ?? '';
+    let existing;
+    try { existing = lstatSync(target); }
+    catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+    if (existing) {
+      if (!existing.isFile() || existing.nlink > 1 || await readFile(target, 'utf-8') !== upstream) {
+        throw new Error(`Upgrade preserves existing rejection file: ${path}. Review or move it before retrying.`);
+      }
+      continue; // Identical proposal already exists; leave its bytes and timestamp intact.
+    }
+    proposals.set(path, upstream);
+  }
+
+  // Reserve proposals before other changes. Exclusive creation also protects a
+  // file (or link) introduced after preflight by another writer.
+  for (const [path, upstream] of proposals) {
+    const target = join(projectDir, ...path.split('/'));
+    await mkdir(dirname(target), { recursive: true });
+    await writeFile(target, upstream, { encoding: 'utf-8', flag: 'wx' });
   }
 
   for (const path of plan.added) {
@@ -193,8 +221,6 @@ export async function applyPlan(
       if (style === 'inline' && !requiresConfigRejection(c.path)) {
         const local = existsSync(target) ? await readFile(target, 'utf-8') : '';
         await writeFile(target, inlineConflictMarkers(local, upstream), 'utf-8');
-      } else {
-        await writeFile(target + '.rej', upstream, 'utf-8');
       }
       modified.push(c.path);
     }

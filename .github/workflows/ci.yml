@@ -308,10 +308,15 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────
   ci-pass:
     name: CI passed
-    needs: [rust, wasm, node, meta-proxy-launchagent, meta-proxy-scheduled-task, pack-install, bench]
+    needs: [rust, wasm, node, meta-proxy-launchagent, meta-proxy-scheduled-task, pack-install, bench, dream-validation, dream-neural]
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
-      - run: echo "All cross-platform gates green."
+      - name: Require every CI dependency to succeed
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: >-
+          node -e 'const failed = Object.entries(JSON.parse(process.env.NEEDS_JSON)).filter(([, job]) => job.result !== "success"); if (failed.length) { console.error("CI dependencies did not succeed:", failed); process.exit(1); } console.log("All CI gates green.");'
 
   dream-validation:
     name: Dream integration / installed artifacts
