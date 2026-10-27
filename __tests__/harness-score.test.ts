@@ -69,13 +69,13 @@ describe('harness score (iter 111)', () => {
     }
   });
 
-  it('--json emits the 6-field badges shape', async () => {
+  it('--json emits the versioned badges shape', async () => {
     const dir = await scaffoldHarness('score-json');
     try {
       const r = await scoreCmd([dir, '--json']);
       const j = JSON.parse(r.lines.join('\n'));
       const keys = Object.keys(j).sort();
-      expect(keys).toEqual(['mcpRisk', 'releaseReady', 'sbom', 'score', 'testsDetected', 'witnessSigned']);
+      expect(keys).toEqual(['exitCode', 'grade', 'mcpRisk', 'releaseReady', 'sbom', 'schema', 'score', 'testsDetected', 'witnessSigned']);
       expect(typeof j.score).toBe('number');
       expect(j.score).toBeGreaterThanOrEqual(0);
       expect(j.score).toBeLessThanOrEqual(100);
@@ -112,7 +112,7 @@ describe('harness score (iter 111)', () => {
       expect(existsSync(outPath)).toBe(true);
       const j = JSON.parse(readFileSync(outPath, 'utf-8'));
       // File contains the badges shape, NOT the full envelope.
-      expect(Object.keys(j).sort()).toEqual(['mcpRisk', 'releaseReady', 'sbom', 'score', 'testsDetected', 'witnessSigned']);
+      expect(Object.keys(j).sort()).toEqual(['exitCode', 'grade', 'mcpRisk', 'releaseReady', 'sbom', 'schema', 'score', 'testsDetected', 'witnessSigned']);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -151,19 +151,8 @@ describe('harness score (iter 111)', () => {
     try {
       const r = await scoreCmd([dir, '--json']);
       const j = JSON.parse(r.lines.join('\n'));
-      // Dream Cycle 2026-09-08 (security-adversarial, issue #280): this
-      // assertion previously read 'None'/'Low' on the belief that the
-      // `minimal` template scaffolds without MCP enabled by default. That
-      // was itself a symptom of the bug this candidate fixes — the
-      // `minimal` template's `.claude/settings.json.tmpl` DOES register a
-      // self-referential `mcpServers` entry (so a host can call back into
-      // the generated harness's own CLI as an MCP tool), and no template
-      // ships a `.harness/mcp-policy.json`, so every default scaffold is
-      // MCP-in-use and fully ungoverned. `scoreMcpSafety()`'s old
-      // policy-file-or-.mcp.json-only detection missed the
-      // settings.json-only registration and silently reported the safest
-      // possible score for the actual state. Now correctly 'High'.
-      expect(j.mcpRisk).toBe('High');
+      // Scaffold now emits a default-deny policy for its MCP registration.
+      expect(j.mcpRisk).toBe('Low');
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
