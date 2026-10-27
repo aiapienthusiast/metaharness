@@ -59,6 +59,13 @@ describe('generated user journey', () => {
     } finally { await client.close(); }
   });
 
+  it.each([{hosts:['copilot','hermes'] as Host[]},{hosts:['hermes','copilot'] as Host[]}])('retains separate Hermes and sibling host setup guides for %j', async ({hosts}) => {
+    const dir = await mkdtemp(join(tmpdir(),'multi-host-guides-')); roots.push(dir);
+    await scaffold({name:'journey-bot',template:'minimal',hosts,targetDir:dir,force:true,generatorVersion:'test',darwin:false});
+    expect(await readFile(join(dir,'install-hermes.md'),'utf8')).toContain('$HERMES_HOME/config.yaml');
+    expect(await readFile(join(dir,'install.md'),'utf8')).toContain('Copilot');
+  });
+
   it('rejects malformed protocol input and bounds complete and incomplete messages', async () => {
     const dir = await generate();
     const exchange = (input: string) => new Promise<{code: number | null; stdout: string}>(resolve => {

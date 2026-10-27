@@ -62,14 +62,15 @@ describe('buildScaffold', () => {
     expect(cfg.content).toContain('legal-redline: "Redline contracts fast"');
   });
 
-  it('places Hermes MCP registration in its native main configuration', () => {
-    const cfg = buildScaffold({...base,hosts:['hermes']}).find(f => f.path === 'cli-config.yaml')!.content;
-    expect(cfg).toContain('mcp_servers:\n');
-    const server = JSON.parse(cfg.split('mcp_servers:\n')[1].trim().slice('legal-redline: '.length));
-    expect(server.command).toBe('npx');
-    expect(server.args).toContain('legal-redline@latest');
-    const disabled = buildScaffold({...base,hosts:['hermes'],primitives:{...base.primitives,mcp:'off'}}).find(f=>f.path==='cli-config.yaml')!.content;
-    expect(disabled).not.toContain('mcp_servers:');
+  it('keeps browser Hermes registry placeholders inactive and preserves multi-host setup guides', () => {
+    for (const hosts of [['hermes','copilot'],['copilot','hermes']] as const) {
+      const files = buildScaffold({...base,hosts:[...hosts]});
+      expect(files.find(f=>f.path==='cli-config.yaml')!.content).not.toContain('mcp_servers:');
+      expect(files.filter(f=>f.path==='install-hermes.md')).toHaveLength(1);
+      expect(files.find(f=>f.path==='install-hermes.md')!.content).toContain('Do not run an unverified registry package');
+      expect(files.some(f=>f.path==='install.md')).toBe(true);
+      expect(new Set(files.map(f=>f.path)).size).toBe(files.length);
+    }
   });
 
   // Regression: `cfg.name` lands in YAML *key* position
