@@ -176,7 +176,27 @@ describe('generated user journey', () => {
     expect(await readFile(join(dir,path),'utf8')).toBe(customized);
     expect((await json(dir,path)).permissions.deny).toContain('Bash(curl *)');
     expect((await json(dir,path+'.rej')).mcpServers['journey-bot'].command).toBe('node');
-    expect(result.lines.join('\n')).toContain('security policy uses a .rej file');
+    expect(result.lines.join('\n')).toContain('structured configuration uses a .rej file');
+  });
+
+  it('preserves customized legacy OpenCode permissions during registration migration', async () => {
+    const dir = await generate('opencode');
+    const path = '.opencode/opencode.json';
+    const oldConfig = await json(dir, path);
+    oldConfig.mcp['journey-bot'].command = ['npx', '-y', 'journey-bot@latest', 'mcp', 'start'];
+    const original = JSON.stringify(oldConfig);
+    const manifest = await json(dir,'.harness/manifest.json');
+    manifest.files[path] = createHash('sha256').update(original).digest('hex');
+    const body = JSON.stringify(manifest);
+    await writeFile(join(dir,'.harness/manifest.json'),body);
+    await writeFile(join(dir,'.harness/manifest.sha256'),createHash('sha256').update(body).digest('hex'));
+    oldConfig.permission.bash['curl *'] = 'deny';
+    const customized = JSON.stringify(oldConfig); await writeFile(join(dir,path),customized);
+    const result = await upgradeCmd([dir,'--apply']);
+    expect(result.code).toBe(1);
+    expect(await readFile(join(dir,path),'utf8')).toBe(customized);
+    expect((await json(dir,path)).permission.bash['curl *']).toBe('deny');
+    expect((await json(dir,path+'.rej')).mcp['journey-bot'].command).toEqual(['node','./bin/mcp.js']);
   });
 
   it('accepts a plugin that omits the optional author field', async () => {

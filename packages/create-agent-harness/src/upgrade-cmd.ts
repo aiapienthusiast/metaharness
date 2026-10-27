@@ -14,7 +14,7 @@
 import { resolve, join } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { planUpgrade, formatPlan, applyPlan, requiresPolicyRejection } from './upgrade.js';
+import { planUpgrade, formatPlan, applyPlan, requiresConfigRejection } from './upgrade.js';
 import { asFileMap } from './walker.js';
 import { templateDir, renderScaffold, type Host } from './index.js';
 import {
@@ -119,8 +119,8 @@ export async function upgradeCmd(args: string[]): Promise<SubcommandResult> {
   }
   const conflicts = plan.changed.filter(c => c.kind === 'conflict');
   const conflictDescription = conflictStyle === 'rej' ? '.rej files'
-    : conflicts.some(c => requiresPolicyRejection(c.path))
-      ? 'inline markers (security policy uses a .rej file)' : 'inline markers';
+    : conflicts.some(c => requiresConfigRejection(c.path))
+      ? 'inline markers (structured configuration uses a .rej file)' : 'inline markers';
 
   if (!apply) {
     lines.push('', `  DRY-RUN: re-run with --apply to apply this plan.`);

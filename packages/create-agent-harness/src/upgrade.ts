@@ -16,7 +16,7 @@
 //        - file changed from old, different from new -> CONFLICT
 //   5. Write conflicts as inline Git markers (<<<<<<< current ======= new
 //      >>>>>>> upstream) OR as .rej files alongside, depending on user's
-//      preference. Default: inline markers.
+//      preference. Default: inline markers for source/text; structured configuration uses .rej files.
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync, lstatSync } from 'node:fs';
@@ -37,9 +37,9 @@ export interface UpgradePlan {
   }>;
 }
 
-/** Active authorization JSON must remain valid while conflicts await review. */
-export function requiresPolicyRejection(path: string): boolean {
-  return path === '.harness/mcp-policy.json' || path === '.claude/settings.json';
+/** Structured host/configuration files must stay parseable while conflicts await review. */
+export function requiresConfigRejection(path: string): boolean {
+  return /\.(?:jsonc?|toml|ya?ml)$/i.test(path);
 }
 
 /** New overlay files must not follow user-created links outside the harness. */
@@ -170,7 +170,7 @@ export async function applyPlan(
   // Preflight before writing any part of this plan, including .rej destinations.
   for (const path of [...plan.added, ...plan.changed.map(c => c.path)]) {
     checkUpgradePath(projectDir, path);
-    if (style === 'rej' || requiresPolicyRejection(path)) checkUpgradePath(projectDir, path + '.rej');
+    if (style === 'rej' || requiresConfigRejection(path)) checkUpgradePath(projectDir, path + '.rej');
   }
 
   for (const path of plan.added) {
@@ -190,7 +190,7 @@ export async function applyPlan(
       modified.push(c.path);
     } else {
       // Never turn a user's active security policy into invalid JSON.
-      if (style === 'inline' && !requiresPolicyRejection(c.path)) {
+      if (style === 'inline' && !requiresConfigRejection(c.path)) {
         const local = existsSync(target) ? await readFile(target, 'utf-8') : '';
         await writeFile(target, inlineConflictMarkers(local, upstream), 'utf-8');
       } else {
