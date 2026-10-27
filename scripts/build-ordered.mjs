@@ -27,7 +27,7 @@ const PHASES = [
   // turn-credit (ADR-248) is dependency-free (node:crypto only) and
   // create-agent-harness imports its /cli — so it builds in phase 1 too.
   // field-memory is dependency-free at runtime; its RuVector seam is duck-typed.
-  ['kernel-js', 'router', 'harness', 'darwin-mode', 'projects', 'redblue', 'weight-eft', 'jujutsu', 'flywheel', 'workspace-lens', 'radio', 'horizon', 'turn-credit', 'field-memory'],
+  ['kernel-js', 'router', 'harness', 'darwin-mode', 'projects', 'redblue', 'weight-eft', 'jujutsu', 'flywheel', 'workspace-lens', 'radio', 'horizon', 'turn-credit', 'field-memory', 'agntcy'],
   // evals-* adapters depend on @metaharness/flywheel's dist → build AFTER phase 1 (avoid .d.ts race).
   // oo-agents (ADR-242) depends on @metaharness/radio's dist → phase 2.
   // avo (ADR-251) depends on @metaharness/horizon's dist → phase 2.
@@ -52,7 +52,7 @@ const PHASES = [
   // Phase 4: vertical-trading (depends on vertical-base), the ARC AVO
   // controlled-ablation runner (depends on arc-agi-3), and bench (depends on
   // EVERY host adapter for the cross-host benchmark in iter 39's host-bench.ts).
-  ['vertical-trading', 'arc-agi-3-bench', 'bench'],
+  ['vertical-trading', 'arc-agi-3-bench', 'bench', 'agent-harness-generator-lib'],
 ];
 
 const ROOT = process.cwd();

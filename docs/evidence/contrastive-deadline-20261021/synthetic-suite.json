@@ -1,0 +1,1539 @@
+{
+  "schemaVersion": 1,
+  "evidenceKind": "synthetic-multi-seed-mechanism-benchmark",
+  "claimEligible": false,
+  "seeds": [
+    261014224,
+    261014225,
+    261014226
+  ],
+  "generatedHoldoutCases": 300,
+  "distinctTaskFamilies": 1,
+  "realModelSpendUsd": 0,
+  "aggregate": {
+    "frozenPassed": 88,
+    "singleControlPassed": 165,
+    "contrastivePassed": 300,
+    "controlSeedRuns": 96,
+    "meanControlPassesPer100": 78.60416666666667,
+    "controlRangePer100": {
+      "min": 46,
+      "max": 100
+    },
+    "medianLatencyMsBySeed": [
+      {
+        "seed": 261014224,
+        "contrastive": 1.028158999999988,
+        "retry": 0.10385700000000497
+      },
+      {
+        "seed": 261014225,
+        "contrastive": 0.7742569999999773,
+        "retry": 0.09119699999996556
+      },
+      {
+        "seed": 261014226,
+        "contrastive": 0.8977419999999938,
+        "retry": 0.09437199999996437
+      }
+    ],
+    "p95LatencyMsBySeed": [
+      {
+        "seed": 261014224,
+        "contrastive": 1.8072929999999872,
+        "retry": 0.2738829999999979
+      },
+      {
+        "seed": 261014225,
+        "contrastive": 1.2818409999999858,
+        "retry": 0.27285100000000284
+      },
+      {
+        "seed": 261014226,
+        "contrastive": 1.8610740000000305,
+        "retry": 0.35855000000003656
+      }
+    ]
+  },
+  "optimization": {
+    "unchangedCandidateProbesAvoidedPerRun": 2,
+    "candidateProbeReductionPercent": 100,
+    "referenceProbeStillRequired": true,
+    "note": "Applies only to identical edits; not a reduction in full-loop successful composition cost."
+  },
+  "limitations": [
+    "Three seeds vary input data within one handcrafted parser family; not 300 independent real-world tasks.",
+    "No LLM inference, current Darwin optimizer comparison, dollars, or transfer improvement is measured.",
+    "Equal budget means seven logical operations, not equal provider cost or tokens.",
+    "All full reports and provenance are retained below; no confidence interval implies external generalization."
+  ],
+  "reports": [
+    {
+      "schemaVersion": 1,
+      "evidenceKind": "synthetic-mechanism-benchmark",
+      "claim": "Offline parser mechanics only; not real LLM quality, current Darwin performance, or transfer evidence.",
+      "realModelSpendUsd": 0,
+      "seed": 261014224,
+      "provenance": {
+        "gitCommit": "ee4ea2b461e45b9e410d0834a0d7811af28083d6",
+        "sourceAndBuildSha256": "0c1ed6d097e40e6b0edd5278df00c0e317e72fda816a54c21afc16f8287bac40",
+        "files": [
+          {
+            "path": "package-lock.json",
+            "sha256": "f6c9db6b0839b9f978bee6fcead83591d5fbf4997108c9417d0934d61047cd0f"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/deadline.mjs",
+            "sha256": "4fd9ff050196b1bae15e90bd5656c9bdab4afc9d4163aa99cd8771e68da32123"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/fixtures.mjs",
+            "sha256": "a03273e95b0cd0ceafa522e9731f0378032dc8d5b84108edbdd7d097fe4fe1c2"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/live-pilot.mjs",
+            "sha256": "cdaa6801f84e80c719262886bd7050c7eb990ab748d97d726d6a992d26aa6e74"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/provenance.mjs",
+            "sha256": "e1c7d50979486e979929c3e29616a41f2496a867aad656e96150164aa6ff425b"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/run-suite.mjs",
+            "sha256": "3bee5db20b821d7edac0ee6a5370a6c69d682b986ce11f733bed12b6350565a0"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/run.mjs",
+            "sha256": "f4321560282ef6c142418f618e7ee70419650d96f227ad7c11295a85ee527ca0"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/synthetic-adapter.mjs",
+            "sha256": "44fa8047b4bf43ce75794a0e16e72856b2ee44df2cfc10c91fb4a6383c4c489c"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/confirmation-types.js",
+            "sha256": "0348bd9e08f696f6bb65c86c79d7d19d9e8a54eb1138fb93792c7b9a891b5922"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/confirmation.js",
+            "sha256": "4a4bf4224c08d60478df14d7940072b7a79b6e9557520bf8c1efa0015df56ebd"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/editors.js",
+            "sha256": "1c1d9c2016bf17c6bf2411d47392e057d5cbf54069f5ecfea8cd596e0b71ff34"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/engine.js",
+            "sha256": "7d0ffb1af5fc80c597b6b6db8f513f7c5bc21e411a4fa74c8e68233fa6e1ce3b"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/index.js",
+            "sha256": "c82601be61d906c6af31e72380c1ba2f6e0dffefb1e0d3a5a95057d2327ced28"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/memory.js",
+            "sha256": "c5e564ed202c64e4e55cd83d89a773784a02a61648c49358e80db328409ff409"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/types.js",
+            "sha256": "01ae2a5b120382f9a648ced7ee8507493a134f216d100fc61600c6c9738235d2"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/validation.js",
+            "sha256": "912ef4897211873a915962f26b965c92e992c8bb78478c5977e8d459254f6cb1"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/confirmation-types.ts",
+            "sha256": "6f4edf61322b4c20d01d7be4a74c5c8a3ad6927f0b6f7cce398bdf765b7d4e69"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/confirmation.ts",
+            "sha256": "dd485d4753cc321148b54a90d9a7476b92495b0615aab6a6b7503a6c06389fe0"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/editors.ts",
+            "sha256": "0cf802589560ab84b5a0f60b0be6d89ce80904c9b8c970e4e91ac9c337d074d4"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/engine.ts",
+            "sha256": "32d79788143c440169de510419cfff41e012952db15c5c81dfa0cdfdff842e93"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/index.ts",
+            "sha256": "c0f4d88546b7053a6e7fc2d899c37c4f3c4ed35ca423cf6b9d4efe5643173c67"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/memory.ts",
+            "sha256": "dcc510af892c6864dc7f60fc9e85c4e5cff98055471a4db4f0770dcb3574346c"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/types.ts",
+            "sha256": "1bad03ef8cd1b5eeaee7107907dd23918da44c6b531d304155ec6f0eb7775165"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/validation.ts",
+            "sha256": "57634ff4168bd8b5c9b7b67590320abdf1772fc29c47ddaacc96013af16e42aa"
+          }
+        ],
+        "node": "v24.19.0",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "dataset": {
+        "development": 8,
+        "heldout": 100,
+        "developmentSha256": "020f35a3f6b84d302926b67221b40db963b13a33cc4eb43f3842313e96f18791",
+        "heldoutSha256": "42104ce6bcedcd27660f84fbcd092c31e6d4b6d4e09af7b24bce48746feb3a70",
+        "noInputOverlap": true,
+        "policy": "Development selects candidates; heldout is scored only after selection.",
+        "holdoutFeatures": {
+          "quoted": 54,
+          "decimalComma": 50
+        }
+      },
+      "results": {
+        "frozenHarness": {
+          "passed": 25,
+          "total": 100,
+          "successRate": 0.25,
+          "probes": 1,
+          "editors": 0,
+          "executedDevelopmentRows": 8,
+          "candidateDigest": "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a"
+        },
+        "equalBudgetSampling": {
+          "passed": 50,
+          "total": 100,
+          "successRate": 0.5,
+          "candidateDigest": "dd6a67997f98fc028b13b4149de9cc2a6cdec55aa849a90b939878f93ccb7782",
+          "seed": 1179177552,
+          "sampled": [
+            "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a",
+            "dd6a67997f98fc028b13b4149de9cc2a6cdec55aa849a90b939878f93ccb7782",
+            "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a",
+            "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a"
+          ],
+          "calls": 7,
+          "editors": 3,
+          "probes": 4,
+          "executedRows": 32,
+          "selectedDevelopmentScore": 0.5
+        },
+        "contrastive": {
+          "passed": 100,
+          "total": 100,
+          "successRate": 1,
+          "candidateDigest": "e5330a815dca8521c8ea6e74bf93e52056111ae379f1b38c865b929410cad488",
+          "calls": 7,
+          "probe": 4,
+          "propose": 2,
+          "compose": 1,
+          "executedRows": 32,
+          "outcome": "candidate",
+          "selectedDevelopmentScore": 1
+        },
+        "samplingSeedSensitivity": [
+          {
+            "seed": 1179177552,
+            "passed": 50,
+            "total": 100,
+            "successRate": 0.5
+          },
+          {
+            "seed": 1539146095,
+            "passed": 50,
+            "total": 100,
+            "successRate": 0.5
+          },
+          {
+            "seed": 175620098,
+            "passed": 50,
+            "total": 100,
+            "successRate": 0.5
+          },
+          {
+            "seed": 993427321,
+            "passed": 50,
+            "total": 100,
+            "successRate": 0.5
+          },
+          {
+            "seed": 1741595268,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 3046231059,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 2046878294,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 3809392061,
+            "passed": 50,
+            "total": 100,
+            "successRate": 0.5
+          },
+          {
+            "seed": 1611430904,
+            "passed": 46,
+            "total": 100,
+            "successRate": 0.46
+          },
+          {
+            "seed": 833490679,
+            "passed": 46,
+            "total": 100,
+            "successRate": 0.46
+          },
+          {
+            "seed": 2455445482,
+            "passed": 46,
+            "total": 100,
+            "successRate": 0.46
+          },
+          {
+            "seed": 396414529,
+            "passed": 46,
+            "total": 100,
+            "successRate": 0.46
+          },
+          {
+            "seed": 2787136172,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 2681187867,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 435981502,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 3974352133,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 221076128,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 3547876735,
+            "passed": 50,
+            "total": 100,
+            "successRate": 0.5
+          },
+          {
+            "seed": 2043837650,
+            "passed": 50,
+            "total": 100,
+            "successRate": 0.5
+          },
+          {
+            "seed": 2052912649,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 2215643092,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 403820835,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 4212491302,
+            "passed": 50,
+            "total": 100,
+            "successRate": 0.5
+          },
+          {
+            "seed": 1994640717,
+            "passed": 50,
+            "total": 100,
+            "successRate": 0.5
+          },
+          {
+            "seed": 374476360,
+            "passed": 50,
+            "total": 100,
+            "successRate": 0.5
+          },
+          {
+            "seed": 1968332039,
+            "passed": 50,
+            "total": 100,
+            "successRate": 0.5
+          },
+          {
+            "seed": 408778426,
+            "passed": 50,
+            "total": 100,
+            "successRate": 0.5
+          },
+          {
+            "seed": 1319507665,
+            "passed": 46,
+            "total": 100,
+            "successRate": 0.46
+          },
+          {
+            "seed": 2724094460,
+            "passed": 46,
+            "total": 100,
+            "successRate": 0.46
+          },
+          {
+            "seed": 2816496939,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 1979017358,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 929814165,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          }
+        ]
+      },
+      "budgetChecks": {
+        "limit7": {
+          "admitted": 7,
+          "probes": 4,
+          "editors": 3,
+          "verifiedParserInputReads": 32
+        },
+        "limit6": {
+          "admitted": 6,
+          "probes": 3,
+          "outcome": "baseline",
+          "reason": "budget"
+        },
+        "unchangedEdits": {
+          "admitted": 3,
+          "probes": 1,
+          "callsAvoided": 2,
+          "reason": "no-improvement"
+        }
+      },
+      "latency": {
+        "unit": "milliseconds",
+        "includes": "Adapter execution, validation, hashing, receipts and scheduling; excludes build.",
+        "frozenHarness": {
+          "n": 100,
+          "medianMs": 0.00774100000000999,
+          "p95Ms": 0.01403099999998858,
+          "minMs": 0.0058989999999994325
+        },
+        "equalBudgetSampling": {
+          "n": 100,
+          "medianMs": 0.10385700000000497,
+          "p95Ms": 0.2738829999999979,
+          "minMs": 0.08250400000000013
+        },
+        "contrastive": {
+          "n": 100,
+          "medianMs": 1.028158999999988,
+          "p95Ms": 1.8072929999999872,
+          "minMs": 0.5745249999999942
+        }
+      },
+      "receipts": [
+        {
+          "candidateDigest": "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.8334150000000022,
+          "kind": "baseline",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 1,
+          "status": "success"
+        },
+        {
+          "candidateDigest": "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.38526999999999134,
+          "kind": "propose:invariant",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 2,
+          "status": "success"
+        },
+        {
+          "candidateDigest": "dd6a67997f98fc028b13b4149de9cc2a6cdec55aa849a90b939878f93ccb7782",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.3571579999999983,
+          "kind": "probe:invariant",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 3,
+          "status": "success"
+        },
+        {
+          "candidateDigest": "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.8506419999999935,
+          "kind": "propose:domain",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 4,
+          "status": "success"
+        },
+        {
+          "candidateDigest": "9b78b1159e3c4807c674e96cadb0b10a7af1c683377728317880fb1288de318e",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.31660699999999053,
+          "kind": "probe:domain",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 5,
+          "status": "success"
+        },
+        {
+          "candidateDigest": "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.6531640000000039,
+          "kind": "compose",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 6,
+          "status": "success"
+        },
+        {
+          "candidateDigest": "e5330a815dca8521c8ea6e74bf93e52056111ae379f1b38c865b929410cad488",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.19822899999999777,
+          "kind": "probe:composition",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 7,
+          "status": "success"
+        }
+      ],
+      "limitations": [
+        "Handwritten proposers know two parser operations. They do not learn general-purpose skills.",
+        "Equal budget means 7 logical operations: 4 eight-row evaluations plus 3 candidate generations; all synthetic operations cost zero dollars, not equal real tokens or spend.",
+        "The repeated-sampling control may tie or beat the loop; no improvement threshold is asserted.",
+        "Same-process answer separation is a benchmark discipline, not isolation from malicious adapters.",
+        "Holdout generation uses the same two-feature distribution as development; external transfer is unmeasured.",
+        "No production promotion, network, shell command, provider call or secret access is performed by adapters."
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "evidenceKind": "synthetic-mechanism-benchmark",
+      "claim": "Offline parser mechanics only; not real LLM quality, current Darwin performance, or transfer evidence.",
+      "realModelSpendUsd": 0,
+      "seed": 261014225,
+      "provenance": {
+        "gitCommit": "ee4ea2b461e45b9e410d0834a0d7811af28083d6",
+        "sourceAndBuildSha256": "0c1ed6d097e40e6b0edd5278df00c0e317e72fda816a54c21afc16f8287bac40",
+        "files": [
+          {
+            "path": "package-lock.json",
+            "sha256": "f6c9db6b0839b9f978bee6fcead83591d5fbf4997108c9417d0934d61047cd0f"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/deadline.mjs",
+            "sha256": "4fd9ff050196b1bae15e90bd5656c9bdab4afc9d4163aa99cd8771e68da32123"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/fixtures.mjs",
+            "sha256": "a03273e95b0cd0ceafa522e9731f0378032dc8d5b84108edbdd7d097fe4fe1c2"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/live-pilot.mjs",
+            "sha256": "cdaa6801f84e80c719262886bd7050c7eb990ab748d97d726d6a992d26aa6e74"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/provenance.mjs",
+            "sha256": "e1c7d50979486e979929c3e29616a41f2496a867aad656e96150164aa6ff425b"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/run-suite.mjs",
+            "sha256": "3bee5db20b821d7edac0ee6a5370a6c69d682b986ce11f733bed12b6350565a0"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/run.mjs",
+            "sha256": "f4321560282ef6c142418f618e7ee70419650d96f227ad7c11295a85ee527ca0"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/synthetic-adapter.mjs",
+            "sha256": "44fa8047b4bf43ce75794a0e16e72856b2ee44df2cfc10c91fb4a6383c4c489c"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/confirmation-types.js",
+            "sha256": "0348bd9e08f696f6bb65c86c79d7d19d9e8a54eb1138fb93792c7b9a891b5922"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/confirmation.js",
+            "sha256": "4a4bf4224c08d60478df14d7940072b7a79b6e9557520bf8c1efa0015df56ebd"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/editors.js",
+            "sha256": "1c1d9c2016bf17c6bf2411d47392e057d5cbf54069f5ecfea8cd596e0b71ff34"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/engine.js",
+            "sha256": "7d0ffb1af5fc80c597b6b6db8f513f7c5bc21e411a4fa74c8e68233fa6e1ce3b"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/index.js",
+            "sha256": "c82601be61d906c6af31e72380c1ba2f6e0dffefb1e0d3a5a95057d2327ced28"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/memory.js",
+            "sha256": "c5e564ed202c64e4e55cd83d89a773784a02a61648c49358e80db328409ff409"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/types.js",
+            "sha256": "01ae2a5b120382f9a648ced7ee8507493a134f216d100fc61600c6c9738235d2"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/validation.js",
+            "sha256": "912ef4897211873a915962f26b965c92e992c8bb78478c5977e8d459254f6cb1"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/confirmation-types.ts",
+            "sha256": "6f4edf61322b4c20d01d7be4a74c5c8a3ad6927f0b6f7cce398bdf765b7d4e69"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/confirmation.ts",
+            "sha256": "dd485d4753cc321148b54a90d9a7476b92495b0615aab6a6b7503a6c06389fe0"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/editors.ts",
+            "sha256": "0cf802589560ab84b5a0f60b0be6d89ce80904c9b8c970e4e91ac9c337d074d4"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/engine.ts",
+            "sha256": "32d79788143c440169de510419cfff41e012952db15c5c81dfa0cdfdff842e93"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/index.ts",
+            "sha256": "c0f4d88546b7053a6e7fc2d899c37c4f3c4ed35ca423cf6b9d4efe5643173c67"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/memory.ts",
+            "sha256": "dcc510af892c6864dc7f60fc9e85c4e5cff98055471a4db4f0770dcb3574346c"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/types.ts",
+            "sha256": "1bad03ef8cd1b5eeaee7107907dd23918da44c6b531d304155ec6f0eb7775165"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/validation.ts",
+            "sha256": "57634ff4168bd8b5c9b7b67590320abdf1772fc29c47ddaacc96013af16e42aa"
+          }
+        ],
+        "node": "v24.19.0",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "dataset": {
+        "development": 8,
+        "heldout": 100,
+        "developmentSha256": "55cba97583d92eba4857438498440373070cb1808925c2abbb3ccf7a0d3b38f0",
+        "heldoutSha256": "49a21af1af046d20681510d846e157e44546aec06761ff81a15b01cc57089575",
+        "noInputOverlap": true,
+        "policy": "Development selects candidates; heldout is scored only after selection.",
+        "holdoutFeatures": {
+          "quoted": 44,
+          "decimalComma": 39
+        }
+      },
+      "results": {
+        "frozenHarness": {
+          "passed": 36,
+          "total": 100,
+          "successRate": 0.36,
+          "probes": 1,
+          "editors": 0,
+          "executedDevelopmentRows": 8,
+          "candidateDigest": "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a"
+        },
+        "equalBudgetSampling": {
+          "passed": 61,
+          "total": 100,
+          "successRate": 0.61,
+          "candidateDigest": "dd6a67997f98fc028b13b4149de9cc2a6cdec55aa849a90b939878f93ccb7782",
+          "seed": 1177513027,
+          "sampled": [
+            "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a",
+            "dd6a67997f98fc028b13b4149de9cc2a6cdec55aa849a90b939878f93ccb7782",
+            "dd6a67997f98fc028b13b4149de9cc2a6cdec55aa849a90b939878f93ccb7782",
+            "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a"
+          ],
+          "calls": 7,
+          "editors": 3,
+          "probes": 4,
+          "executedRows": 32,
+          "selectedDevelopmentScore": 0.5
+        },
+        "contrastive": {
+          "passed": 100,
+          "total": 100,
+          "successRate": 1,
+          "candidateDigest": "e5330a815dca8521c8ea6e74bf93e52056111ae379f1b38c865b929410cad488",
+          "calls": 7,
+          "probe": 4,
+          "propose": 2,
+          "compose": 1,
+          "executedRows": 32,
+          "outcome": "candidate",
+          "selectedDevelopmentScore": 1
+        },
+        "samplingSeedSensitivity": [
+          {
+            "seed": 1177513027,
+            "passed": 61,
+            "total": 100,
+            "successRate": 0.61
+          },
+          {
+            "seed": 1149576390,
+            "passed": 61,
+            "total": 100,
+            "successRate": 0.61
+          },
+          {
+            "seed": 1529787757,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 834443240,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 3174111783,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 4129804634,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 195588337,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 4169512348,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 3721483339,
+            "passed": 61,
+            "total": 100,
+            "successRate": 0.61
+          },
+          {
+            "seed": 586751278,
+            "passed": 61,
+            "total": 100,
+            "successRate": 0.61
+          },
+          {
+            "seed": 506708661,
+            "passed": 61,
+            "total": 100,
+            "successRate": 0.61
+          },
+          {
+            "seed": 1750135952,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 2886516399,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 2888129602,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 3750293177,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 1972488388,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 3858251091,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 3482591894,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 761428221,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 2539185720,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 3542414391,
+            "passed": 56,
+            "total": 100,
+            "successRate": 0.56
+          },
+          {
+            "seed": 2281456682,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 1333863809,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 1686651116,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 4165224283,
+            "passed": 61,
+            "total": 100,
+            "successRate": 0.61
+          },
+          {
+            "seed": 70767870,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 2129655877,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 2319912160,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 3540769471,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 165161234,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 3750245705,
+            "passed": 61,
+            "total": 100,
+            "successRate": 0.61
+          },
+          {
+            "seed": 263568916,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          }
+        ]
+      },
+      "budgetChecks": {
+        "limit7": {
+          "admitted": 7,
+          "probes": 4,
+          "editors": 3,
+          "verifiedParserInputReads": 32
+        },
+        "limit6": {
+          "admitted": 6,
+          "probes": 3,
+          "outcome": "baseline",
+          "reason": "budget"
+        },
+        "unchangedEdits": {
+          "admitted": 3,
+          "probes": 1,
+          "callsAvoided": 2,
+          "reason": "no-improvement"
+        }
+      },
+      "latency": {
+        "unit": "milliseconds",
+        "includes": "Adapter execution, validation, hashing, receipts and scheduling; excludes build.",
+        "frozenHarness": {
+          "n": 100,
+          "medianMs": 0.00678099999998949,
+          "p95Ms": 0.011457000000007156,
+          "minMs": 0.00588900000002468
+        },
+        "equalBudgetSampling": {
+          "n": 100,
+          "medianMs": 0.09119699999996556,
+          "p95Ms": 0.27285100000000284,
+          "minMs": 0.0825240000000349
+        },
+        "contrastive": {
+          "n": 100,
+          "medianMs": 0.7742569999999773,
+          "p95Ms": 1.2818409999999858,
+          "minMs": 0.5906599999999571
+        }
+      },
+      "receipts": [
+        {
+          "candidateDigest": "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.12189300000000003,
+          "kind": "baseline",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 1,
+          "status": "success"
+        },
+        {
+          "candidateDigest": "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.057165999999995165,
+          "kind": "propose:invariant",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 2,
+          "status": "success"
+        },
+        {
+          "candidateDigest": "dd6a67997f98fc028b13b4149de9cc2a6cdec55aa849a90b939878f93ccb7782",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.06059099999998807,
+          "kind": "probe:invariant",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 3,
+          "status": "success"
+        },
+        {
+          "candidateDigest": "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.0358540000000005,
+          "kind": "propose:domain",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 4,
+          "status": "success"
+        },
+        {
+          "candidateDigest": "9b78b1159e3c4807c674e96cadb0b10a7af1c683377728317880fb1288de318e",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.1039869999999894,
+          "kind": "probe:domain",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 5,
+          "status": "success"
+        },
+        {
+          "candidateDigest": "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.0625440000000026,
+          "kind": "compose",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 6,
+          "status": "success"
+        },
+        {
+          "candidateDigest": "e5330a815dca8521c8ea6e74bf93e52056111ae379f1b38c865b929410cad488",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.04627999999999588,
+          "kind": "probe:composition",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 7,
+          "status": "success"
+        }
+      ],
+      "limitations": [
+        "Handwritten proposers know two parser operations. They do not learn general-purpose skills.",
+        "Equal budget means 7 logical operations: 4 eight-row evaluations plus 3 candidate generations; all synthetic operations cost zero dollars, not equal real tokens or spend.",
+        "The repeated-sampling control may tie or beat the loop; no improvement threshold is asserted.",
+        "Same-process answer separation is a benchmark discipline, not isolation from malicious adapters.",
+        "Holdout generation uses the same two-feature distribution as development; external transfer is unmeasured.",
+        "No production promotion, network, shell command, provider call or secret access is performed by adapters."
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "evidenceKind": "synthetic-mechanism-benchmark",
+      "claim": "Offline parser mechanics only; not real LLM quality, current Darwin performance, or transfer evidence.",
+      "realModelSpendUsd": 0,
+      "seed": 261014226,
+      "provenance": {
+        "gitCommit": "ee4ea2b461e45b9e410d0834a0d7811af28083d6",
+        "sourceAndBuildSha256": "0c1ed6d097e40e6b0edd5278df00c0e317e72fda816a54c21afc16f8287bac40",
+        "files": [
+          {
+            "path": "package-lock.json",
+            "sha256": "f6c9db6b0839b9f978bee6fcead83591d5fbf4997108c9417d0934d61047cd0f"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/deadline.mjs",
+            "sha256": "4fd9ff050196b1bae15e90bd5656c9bdab4afc9d4163aa99cd8771e68da32123"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/fixtures.mjs",
+            "sha256": "a03273e95b0cd0ceafa522e9731f0378032dc8d5b84108edbdd7d097fe4fe1c2"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/live-pilot.mjs",
+            "sha256": "cdaa6801f84e80c719262886bd7050c7eb990ab748d97d726d6a992d26aa6e74"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/provenance.mjs",
+            "sha256": "e1c7d50979486e979929c3e29616a41f2496a867aad656e96150164aa6ff425b"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/run-suite.mjs",
+            "sha256": "3bee5db20b821d7edac0ee6a5370a6c69d682b986ce11f733bed12b6350565a0"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/run.mjs",
+            "sha256": "f4321560282ef6c142418f618e7ee70419650d96f227ad7c11295a85ee527ca0"
+          },
+          {
+            "path": "packages/darwin-mode/bench/contrastive/synthetic-adapter.mjs",
+            "sha256": "44fa8047b4bf43ce75794a0e16e72856b2ee44df2cfc10c91fb4a6383c4c489c"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/confirmation-types.js",
+            "sha256": "0348bd9e08f696f6bb65c86c79d7d19d9e8a54eb1138fb93792c7b9a891b5922"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/confirmation.js",
+            "sha256": "4a4bf4224c08d60478df14d7940072b7a79b6e9557520bf8c1efa0015df56ebd"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/editors.js",
+            "sha256": "1c1d9c2016bf17c6bf2411d47392e057d5cbf54069f5ecfea8cd596e0b71ff34"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/engine.js",
+            "sha256": "7d0ffb1af5fc80c597b6b6db8f513f7c5bc21e411a4fa74c8e68233fa6e1ce3b"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/index.js",
+            "sha256": "c82601be61d906c6af31e72380c1ba2f6e0dffefb1e0d3a5a95057d2327ced28"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/memory.js",
+            "sha256": "c5e564ed202c64e4e55cd83d89a773784a02a61648c49358e80db328409ff409"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/types.js",
+            "sha256": "01ae2a5b120382f9a648ced7ee8507493a134f216d100fc61600c6c9738235d2"
+          },
+          {
+            "path": "packages/darwin-mode/dist/contrastive/validation.js",
+            "sha256": "912ef4897211873a915962f26b965c92e992c8bb78478c5977e8d459254f6cb1"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/confirmation-types.ts",
+            "sha256": "6f4edf61322b4c20d01d7be4a74c5c8a3ad6927f0b6f7cce398bdf765b7d4e69"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/confirmation.ts",
+            "sha256": "dd485d4753cc321148b54a90d9a7476b92495b0615aab6a6b7503a6c06389fe0"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/editors.ts",
+            "sha256": "0cf802589560ab84b5a0f60b0be6d89ce80904c9b8c970e4e91ac9c337d074d4"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/engine.ts",
+            "sha256": "32d79788143c440169de510419cfff41e012952db15c5c81dfa0cdfdff842e93"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/index.ts",
+            "sha256": "c0f4d88546b7053a6e7fc2d899c37c4f3c4ed35ca423cf6b9d4efe5643173c67"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/memory.ts",
+            "sha256": "dcc510af892c6864dc7f60fc9e85c4e5cff98055471a4db4f0770dcb3574346c"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/types.ts",
+            "sha256": "1bad03ef8cd1b5eeaee7107907dd23918da44c6b531d304155ec6f0eb7775165"
+          },
+          {
+            "path": "packages/darwin-mode/src/contrastive/validation.ts",
+            "sha256": "57634ff4168bd8b5c9b7b67590320abdf1772fc29c47ddaacc96013af16e42aa"
+          }
+        ],
+        "node": "v24.19.0",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "dataset": {
+        "development": 8,
+        "heldout": 100,
+        "developmentSha256": "12dca0edc7cc01be17757bbdcdbd9bcb19a895fec1da27d7f11b219c2427a50b",
+        "heldoutSha256": "565a0d659cc251cf79b9038cbfc6cfd776eede0fb5bb533670dfec324e025f9a",
+        "noInputOverlap": true,
+        "policy": "Development selects candidates; heldout is scored only after selection.",
+        "holdoutFeatures": {
+          "quoted": 46,
+          "decimalComma": 53
+        }
+      },
+      "results": {
+        "frozenHarness": {
+          "passed": 27,
+          "total": 100,
+          "successRate": 0.27,
+          "probes": 1,
+          "editors": 0,
+          "executedDevelopmentRows": 8,
+          "candidateDigest": "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a"
+        },
+        "equalBudgetSampling": {
+          "passed": 54,
+          "total": 100,
+          "successRate": 0.54,
+          "candidateDigest": "9b78b1159e3c4807c674e96cadb0b10a7af1c683377728317880fb1288de318e",
+          "seed": 1182506602,
+          "sampled": [
+            "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a",
+            "9b78b1159e3c4807c674e96cadb0b10a7af1c683377728317880fb1288de318e",
+            "dd6a67997f98fc028b13b4149de9cc2a6cdec55aa849a90b939878f93ccb7782",
+            "dd6a67997f98fc028b13b4149de9cc2a6cdec55aa849a90b939878f93ccb7782"
+          ],
+          "calls": 7,
+          "editors": 3,
+          "probes": 4,
+          "executedRows": 32,
+          "selectedDevelopmentScore": 0.5
+        },
+        "contrastive": {
+          "passed": 100,
+          "total": 100,
+          "successRate": 1,
+          "candidateDigest": "e5330a815dca8521c8ea6e74bf93e52056111ae379f1b38c865b929410cad488",
+          "calls": 7,
+          "probe": 4,
+          "propose": 2,
+          "compose": 1,
+          "executedRows": 32,
+          "outcome": "candidate",
+          "selectedDevelopmentScore": 1
+        },
+        "samplingSeedSensitivity": [
+          {
+            "seed": 1182506602,
+            "passed": 54,
+            "total": 100,
+            "successRate": 0.54
+          },
+          {
+            "seed": 2318285505,
+            "passed": 47,
+            "total": 100,
+            "successRate": 0.47
+          },
+          {
+            "seed": 1762252076,
+            "passed": 47,
+            "total": 100,
+            "successRate": 0.47
+          },
+          {
+            "seed": 1311395483,
+            "passed": 54,
+            "total": 100,
+            "successRate": 0.54
+          },
+          {
+            "seed": 3171529534,
+            "passed": 47,
+            "total": 100,
+            "successRate": 0.47
+          },
+          {
+            "seed": 879083909,
+            "passed": 47,
+            "total": 100,
+            "successRate": 0.47
+          },
+          {
+            "seed": 1454490912,
+            "passed": 54,
+            "total": 100,
+            "successRate": 0.54
+          },
+          {
+            "seed": 3089151487,
+            "passed": 47,
+            "total": 100,
+            "successRate": 0.47
+          },
+          {
+            "seed": 1686293330,
+            "passed": 47,
+            "total": 100,
+            "successRate": 0.47
+          },
+          {
+            "seed": 1326969481,
+            "passed": 47,
+            "total": 100,
+            "successRate": 0.47
+          },
+          {
+            "seed": 2057951828,
+            "passed": 47,
+            "total": 100,
+            "successRate": 0.47
+          },
+          {
+            "seed": 1983938979,
+            "passed": 54,
+            "total": 100,
+            "successRate": 0.54
+          },
+          {
+            "seed": 2588375718,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 2267304397,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 2397292744,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 3683112327,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 1536660794,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 3678446417,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 313689212,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 1080366507,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 3857067790,
+            "passed": 47,
+            "total": 100,
+            "successRate": 0.47
+          },
+          {
+            "seed": 943516437,
+            "passed": 47,
+            "total": 100,
+            "successRate": 0.47
+          },
+          {
+            "seed": 1379811696,
+            "passed": 54,
+            "total": 100,
+            "successRate": 0.54
+          },
+          {
+            "seed": 2610619919,
+            "passed": 47,
+            "total": 100,
+            "successRate": 0.47
+          },
+          {
+            "seed": 1382915106,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 1468493081,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 1261990820,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 3613665971,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 1090744438,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 3824201053,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 2731527960,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          },
+          {
+            "seed": 2262304663,
+            "passed": 100,
+            "total": 100,
+            "successRate": 1
+          }
+        ]
+      },
+      "budgetChecks": {
+        "limit7": {
+          "admitted": 7,
+          "probes": 4,
+          "editors": 3,
+          "verifiedParserInputReads": 32
+        },
+        "limit6": {
+          "admitted": 6,
+          "probes": 3,
+          "outcome": "baseline",
+          "reason": "budget"
+        },
+        "unchangedEdits": {
+          "admitted": 3,
+          "probes": 1,
+          "callsAvoided": 2,
+          "reason": "no-improvement"
+        }
+      },
+      "latency": {
+        "unit": "milliseconds",
+        "includes": "Adapter execution, validation, hashing, receipts and scheduling; excludes build.",
+        "frozenHarness": {
+          "n": 100,
+          "medianMs": 0.006920999999977084,
+          "p95Ms": 0.015442999999947915,
+          "minMs": 0.005529000000024098
+        },
+        "equalBudgetSampling": {
+          "n": 100,
+          "medianMs": 0.09437199999996437,
+          "p95Ms": 0.35855000000003656,
+          "minMs": 0.08174299999996038
+        },
+        "contrastive": {
+          "n": 100,
+          "medianMs": 0.8977419999999938,
+          "p95Ms": 1.8610740000000305,
+          "minMs": 0.5606149999999843
+        }
+      },
+      "receipts": [
+        {
+          "candidateDigest": "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.11192900000003192,
+          "kind": "baseline",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 1,
+          "status": "success"
+        },
+        {
+          "candidateDigest": "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.04712100000000419,
+          "kind": "propose:invariant",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 2,
+          "status": "success"
+        },
+        {
+          "candidateDigest": "dd6a67997f98fc028b13b4149de9cc2a6cdec55aa849a90b939878f93ccb7782",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.053651000000002114,
+          "kind": "probe:invariant",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 3,
+          "status": "success"
+        },
+        {
+          "candidateDigest": "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.03460200000000668,
+          "kind": "propose:domain",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 4,
+          "status": "success"
+        },
+        {
+          "candidateDigest": "9b78b1159e3c4807c674e96cadb0b10a7af1c683377728317880fb1288de318e",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.28367799999995214,
+          "kind": "probe:domain",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 5,
+          "status": "success"
+        },
+        {
+          "candidateDigest": "1e37e2dea2350a9b945738e23f0187e6060c5a7124c4a0e1154d052d9786b64a",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.06711200000000872,
+          "kind": "compose",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 6,
+          "status": "success"
+        },
+        {
+          "candidateDigest": "e5330a815dca8521c8ea6e74bf93e52056111ae379f1b38c865b929410cad488",
+          "cumulativeReportedUsd": 0,
+          "cumulativeReservedUsd": 0,
+          "durationMs": 0.04924399999998741,
+          "kind": "probe:composition",
+          "reportedUsd": 0,
+          "reservedUsd": 0,
+          "sequence": 7,
+          "status": "success"
+        }
+      ],
+      "limitations": [
+        "Handwritten proposers know two parser operations. They do not learn general-purpose skills.",
+        "Equal budget means 7 logical operations: 4 eight-row evaluations plus 3 candidate generations; all synthetic operations cost zero dollars, not equal real tokens or spend.",
+        "The repeated-sampling control may tie or beat the loop; no improvement threshold is asserted.",
+        "Same-process answer separation is a benchmark discipline, not isolation from malicious adapters.",
+        "Holdout generation uses the same two-feature distribution as development; external transfer is unmeasured.",
+        "No production promotion, network, shell command, provider call or secret access is performed by adapters."
+      ]
+    }
+  ]
+}
