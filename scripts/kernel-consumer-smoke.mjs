@@ -4,15 +4,21 @@ import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {mkdtempSync, mkdirSync, writeFileSync, readFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
-import {join, resolve} from 'node:path';
+import {join, resolve, dirname} from 'node:path';
 import {pathToFileURL} from 'node:url';
 
 const root = resolve('.');
 const scratch = mkdtempSync(join(tmpdir(), 'kernel npm consumer '));
-const run = (command, args, cwd = scratch) => execFileSync(command, args, {
-  cwd, encoding:'utf8', timeout:120000, stdio:['ignore','pipe','pipe'],
-  ...(process.platform === 'win32' && command === 'npm' ? {shell:true} : {}),
-});
+// npm.cmd needs a shell, which splits the deliberate spaces in this fixture's
+// tarball path. Invoke npm's JS entry directly on Windows instead.
+const windowsNpmCli = process.env.npm_execpath?.endsWith('npm-cli.js')
+  ? process.env.npm_execpath : join(dirname(process.execPath),'node_modules/npm/bin/npm-cli.js');
+const run = (command, args, cwd = scratch) => {
+  const npmOnWindows = process.platform === 'win32' && command === 'npm';
+  return execFileSync(npmOnWindows ? process.execPath : command, npmOnWindows ? [windowsNpmCli,...args] : args, {
+    cwd, encoding:'utf8', timeout:120000, stdio:['ignore','pipe','pipe'],
+  });
+};
 const npmVersion = run('npm',['--version']).trim();
 assert.equal(npmVersion.split('.')[0],'11','Consumer qualification requires npm 11');
 const registry = process.argv.includes('--registry');
