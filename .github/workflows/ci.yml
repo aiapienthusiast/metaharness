@@ -282,6 +282,8 @@ jobs:
         run: npx --yes npm@11 ci
       - run: npm run build
       - run: npx vitest run packages/kernel-js packages/bench --maxWorkers=2
+      - name: Kernel tarball npm 11 consumer clean install
+        run: node scripts/kernel-consumer-smoke.mjs
 
   # ─────────────────────────────────────────────────────────────────────
   # Bench (Linux only — others would be redundant for synthetic corpus)

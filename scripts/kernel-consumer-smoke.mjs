@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: MIT
+// Real npm consumer acceptance. No registry publication or native binary claims.
+import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
+import {mkdtempSync, mkdirSync, writeFileSync, readFileSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join, resolve} from 'node:path';
+import {pathToFileURL} from 'node:url';
+
+const root = resolve('.');
+const scratch = mkdtempSync(join(tmpdir(), 'kernel npm consumer '));
+const run = (command, args, cwd = scratch) => execFileSync(command, args, {
+  cwd, encoding:'utf8', timeout:120000, stdio:['ignore','pipe','pipe'],
+  ...(process.platform === 'win32' && command === 'npm' ? {shell:true} : {}),
+});
+const npmVersion = run('npm',['--version']).trim();
+assert.equal(npmVersion.split('.')[0],'11','Consumer qualification requires npm 11');
+const registry = process.argv.includes('--registry');
+const sourceManifest = JSON.parse(readFileSync(join(root,'packages/kernel-js/package.json'),'utf8'));
+const packed = registry ? undefined : JSON.parse(run('npm',['pack','--json','--ignore-scripts','--pack-destination',scratch],join(root,'packages/kernel-js')))[0];
+const installSpec = registry ? `${sourceManifest.name}@${sourceManifest.version}` : join(scratch,packed.filename);
+const consumer = join(scratch,'consumer'); mkdirSync(consumer);
+writeFileSync(join(consumer,'package.json'),JSON.stringify({private:true,type:'module'}));
+run('npm',['install','--no-audit','--no-fund',installSpec],consumer);
+run('npm',['ci','--no-audit','--no-fund'],consumer);
+const installed = join(consumer,'node_modules/@metaharness/kernel');
+const manifest = JSON.parse(readFileSync(join(installed,'package.json'),'utf8'));
+assert.equal(manifest.version,sourceManifest.version);
+const result = JSON.parse(run(process.execPath,['--input-type=module','-e',
+  `const {loadKernel}=await import(${JSON.stringify(pathToFileURL(join(installed,'dist/index.js')).href)});const k=await loadKernel();console.log(JSON.stringify({backend:k.backend,version:k.version()}));`],consumer));
+assert(['native','wasm','js'].includes(result.backend));
+assert.equal(result.version,sourceManifest.version);
+console.log(JSON.stringify({status:'PASS',source:registry?'registry':'tarball',package:`${manifest.name}@${manifest.version}`,npm:npmVersion,backend:result.backend,consumer,...(!registry?{tarball:installSpec}:{})}));
