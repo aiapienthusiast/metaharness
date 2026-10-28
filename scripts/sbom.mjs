@@ -50,26 +50,38 @@ function packageVerificationCode(versionCount) {
 // package-lock.json already carries that data per-package as an SRI string
 // (`<algo>-<base64>`) — decode it into the hex-encoded SPDX `checksums`
 // shape instead of fabricating one. A package can carry more than one SRI
-// entry (space-separated); the strongest algorithm wins. Returns undefined
-// (never a fabricated value) when no real integrity data is available.
+// entry (space-separated); the strongest algorithm wins, and a digest is
+// only trusted when its decoded length matches that algorithm (W3C SRI
+// §3.3.4 lets multiple same-strength entries each independently "match" —
+// reviewed 2026-10-28: a truncated/malformed entry at the strongest
+// algorithm must not silently win over a shorter-but-valid one, and two
+// *disagreeing* same-strength entries are genuinely ambiguous — in both
+// cases this returns undefined rather than guessing). Returns undefined
+// (never a fabricated value) when no real, unambiguous integrity data
+// exists.
 const SRI_ALGO_TO_SPDX = { sha512: 'SHA512', sha384: 'SHA384', sha256: 'SHA256', sha1: 'SHA1' };
 const SRI_STRENGTH_ORDER = ['sha512', 'sha384', 'sha256', 'sha1'];
+const SRI_DIGEST_LENGTH = { sha512: 64, sha384: 48, sha256: 32, sha1: 20 };
 
-function sriToSpdxChecksum(integrity) {
+export function sriToSpdxChecksum(integrity) {
   if (typeof integrity !== 'string' || integrity.trim() === '') return undefined;
-  let best;
+  const byAlgo = new Map();
   for (const entry of integrity.trim().split(/\s+/)) {
     const m = /^(sha512|sha384|sha256|sha1)-([A-Za-z0-9+/]+=*)$/.exec(entry);
     if (!m) continue;
     let buf;
     try { buf = Buffer.from(m[2], 'base64'); } catch { continue; }
-    if (buf.length === 0) continue;
-    if (!best || SRI_STRENGTH_ORDER.indexOf(m[1]) < SRI_STRENGTH_ORDER.indexOf(best.algo)) {
-      best = { algo: m[1], buf };
-    }
+    if (buf.length !== SRI_DIGEST_LENGTH[m[1]]) continue; // wrong length for the claimed algorithm — never a real digest
+    if (!byAlgo.has(m[1])) byAlgo.set(m[1], new Set());
+    byAlgo.get(m[1]).add(buf.toString('hex'));
   }
-  if (!best) return undefined;
-  return { algorithm: SRI_ALGO_TO_SPDX[best.algo], checksumValue: best.buf.toString('hex') };
+  for (const algo of SRI_STRENGTH_ORDER) {
+    const hexes = byAlgo.get(algo);
+    if (!hexes || hexes.size === 0) continue;
+    if (hexes.size > 1) return undefined; // 2+ disagreeing digests at the strongest available algorithm — ambiguous, don't guess
+    return { algorithm: SRI_ALGO_TO_SPDX[algo], checksumValue: [...hexes][0] };
+  }
+  return undefined;
 }
 
 async function readNpmLock(path = join(ROOT, 'package-lock.json')) {

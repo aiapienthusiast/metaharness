@@ -9,7 +9,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 // @ts-ignore — JS module
 import { createHash } from 'node:crypto';
-import { validateSpdx, buildSbomFromRepo } from '../scripts/sbom.mjs';
+import { validateSpdx, buildSbomFromRepo, sriToSpdxChecksum } from '../scripts/sbom.mjs';
 
 const execFile = promisify(execFileCb);
 const ROOT = process.cwd();
@@ -199,5 +199,21 @@ describe('SBOM builder against the live repo', () => {
     for (const p of cargoPkgs) {
       expect(p.checksums).toBeUndefined();
     }
+  });
+
+  // 2026-10-28 review (proffesor-for-testing, P2 REMAND), reproduced here
+  // against scripts/sbom.mjs's own exported helper (the sibling of the
+  // one fixed in sbom-cmd.ts, same bug class in both files).
+  it('sriToSpdxChecksum rejects a digest whose decoded length does not match its claimed algorithm', () => {
+    expect(sriToSpdxChecksum('sha512-YQ==')).toBeUndefined();
+    const sha256 = `sha256-${createHash('sha256').update('x').digest('base64')}`;
+    expect(sriToSpdxChecksum(`sha512-YQ== ${sha256}`)?.algorithm).toBe('SHA256');
+  });
+
+  it('sriToSpdxChecksum treats disagreeing same-strength SRI entries as ambiguous, order-independently', () => {
+    const alt = `sha512-${createHash('sha512').update('alternative-artifact').digest('base64')}`;
+    const actual = `sha512-${createHash('sha512').update('actual-artifact').digest('base64')}`;
+    expect(sriToSpdxChecksum(`${alt} ${actual}`)).toBeUndefined();
+    expect(sriToSpdxChecksum(`${actual} ${alt}`)).toBeUndefined();
   });
 });

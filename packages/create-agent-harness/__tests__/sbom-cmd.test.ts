@@ -127,6 +127,37 @@ describe('sriToSpdxChecksum — SRI integrity -> SPDX checksum', () => {
     expect(sriToSpdxChecksum(multi)?.algorithm).toBe('SHA512');
   });
 
+  // 2026-10-28 review (proffesor-for-testing, P2 REMAND): a truncated/
+  // malformed SRI payload decodes to a valid base64 buffer of the WRONG
+  // length for its claimed algorithm — e.g. 'sha512-YQ==' decodes to 1
+  // byte, not SHA-512's real 64 — and the pre-fix code accepted it as a
+  // genuine Component Hash just because the buffer was non-empty.
+  it('rejects a digest whose decoded length does not match its claimed algorithm (never fabricates a wrong-length hash)', () => {
+    expect(sriToSpdxChecksum('sha512-YQ==')).toBeUndefined();
+    // a validly-shaped weaker algorithm elsewhere in the same string must
+    // still be found — the bad-length sha512 entry must not block it.
+    const withValidFallback = `sha512-YQ== ${sriFor('sha256', 'x')}`;
+    expect(sriToSpdxChecksum(withValidFallback)?.algorithm).toBe('SHA256');
+  });
+
+  // 2026-10-28 review: two SRI entries at the SAME (strongest) algorithm
+  // that decode to DIFFERENT digests are genuinely ambiguous per W3C SRI
+  // §3.3.4/3.3.5 (either may "match" depending on which artifact is
+  // actually fetched) — picking whichever happens to appear first is an
+  // arbitrary, order-dependent choice, not a real Component Hash claim.
+  it('treats disagreeing same-strength SRI entries as ambiguous and omits the checksum, order-independently', () => {
+    const alt = sriFor('sha512', 'alternative-artifact');
+    const actual = sriFor('sha512', 'actual-artifact');
+    expect(sriToSpdxChecksum(`${alt} ${actual}`)).toBeUndefined();
+    expect(sriToSpdxChecksum(`${actual} ${alt}`)).toBeUndefined();
+  });
+
+  it('still picks a single value when the same strongest digest is repeated (no real ambiguity)', () => {
+    const sri = sriFor('sha512', 'left-pad@1.3.0');
+    const expectedHex = createHash('sha512').update('left-pad@1.3.0').digest('hex');
+    expect(sriToSpdxChecksum(`${sri} ${sri}`)).toEqual({ algorithm: 'SHA512', checksumValue: expectedHex });
+  });
+
   it('returns undefined (never a fabricated hash) for missing/malformed/empty integrity', () => {
     expect(sriToSpdxChecksum(undefined)).toBeUndefined();
     expect(sriToSpdxChecksum('')).toBeUndefined();
