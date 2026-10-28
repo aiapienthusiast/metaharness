@@ -38,8 +38,38 @@ function spdxId(prefix, name) {
 
 function packageVerificationCode(versionCount) {
   // SPDX requires a hex hash; without unpacking every tarball, we use a
-  // stable composition of the version set as a proxy.
+  // stable composition of the version set as a proxy. This is a document-
+  // level namespace salt only — never presented as a per-package checksum
+  // (see sriToSpdxChecksum below for those).
   return createHash('sha1').update(`v=${versionCount}`).digest('hex');
+}
+
+// 2026-07-29 CISA/NSA/FBI "Minimum Elements for a SBOM" (superseding the
+// 2021 NTIA baseline) adds Component Hash to the field set every producer
+// is expected to populate when data for it exists. npm's own
+// package-lock.json already carries that data per-package as an SRI string
+// (`<algo>-<base64>`) — decode it into the hex-encoded SPDX `checksums`
+// shape instead of fabricating one. A package can carry more than one SRI
+// entry (space-separated); the strongest algorithm wins. Returns undefined
+// (never a fabricated value) when no real integrity data is available.
+const SRI_ALGO_TO_SPDX = { sha512: 'SHA512', sha384: 'SHA384', sha256: 'SHA256', sha1: 'SHA1' };
+const SRI_STRENGTH_ORDER = ['sha512', 'sha384', 'sha256', 'sha1'];
+
+function sriToSpdxChecksum(integrity) {
+  if (typeof integrity !== 'string' || integrity.trim() === '') return undefined;
+  let best;
+  for (const entry of integrity.trim().split(/\s+/)) {
+    const m = /^(sha512|sha384|sha256|sha1)-([A-Za-z0-9+/]+=*)$/.exec(entry);
+    if (!m) continue;
+    let buf;
+    try { buf = Buffer.from(m[2], 'base64'); } catch { continue; }
+    if (buf.length === 0) continue;
+    if (!best || SRI_STRENGTH_ORDER.indexOf(m[1]) < SRI_STRENGTH_ORDER.indexOf(best.algo)) {
+      best = { algo: m[1], buf };
+    }
+  }
+  if (!best) return undefined;
+  return { algorithm: SRI_ALGO_TO_SPDX[best.algo], checksumValue: best.buf.toString('hex') };
 }
 
 async function readNpmLock(path = join(ROOT, 'package-lock.json')) {
@@ -126,22 +156,25 @@ function npmEntries(lock) {
 
 function buildSpdx(npm, cargo) {
   const now = new Date(0).toISOString();  // deterministic for reproducible builds
-  const npmPkgs = npm.map(p => ({
-    SPDXID: spdxId('npm', p.name + '-' + p.version),
-    name: p.name,
-    versionInfo: p.version,
-    downloadLocation: p.source,
-    filesAnalyzed: false,
-    licenseConcluded: 'NOASSERTION',
-    licenseDeclared: typeof p.license === 'string' ? p.license : 'NOASSERTION',
-    copyrightText: 'NOASSERTION',
-    checksums: [{ algorithm: 'SHA1', checksumValue: createHash('sha1').update(p.integrity ?? `${p.name}@${p.version}`).digest('hex') }],
-    externalRefs: [{
-      referenceCategory: 'PACKAGE-MANAGER',
-      referenceType: 'purl',
-      referenceLocator: `pkg:npm/${p.name}@${p.version}`,
-    }],
-  }));
+  const npmPkgs = npm.map(p => {
+    const checksum = sriToSpdxChecksum(p.integrity);
+    return {
+      SPDXID: spdxId('npm', p.name + '-' + p.version),
+      name: p.name,
+      versionInfo: p.version,
+      downloadLocation: p.source,
+      filesAnalyzed: false,
+      licenseConcluded: 'NOASSERTION',
+      licenseDeclared: typeof p.license === 'string' ? p.license : 'NOASSERTION',
+      copyrightText: 'NOASSERTION',
+      ...(checksum ? { checksums: [checksum] } : {}),
+      externalRefs: [{
+        referenceCategory: 'PACKAGE-MANAGER',
+        referenceType: 'purl',
+        referenceLocator: `pkg:npm/${p.name}@${p.version}`,
+      }],
+    };
+  });
   const cargoPkgs = cargo.map(p => ({
     SPDXID: spdxId('cargo', p.name + '-' + p.version),
     name: p.name,
@@ -220,6 +253,10 @@ async function main() {
   const doc = await buildSbomFromRepo();
   const v = validateSpdx(doc);
   log('INFO', `SPDX has ${doc.packages.length} packages (validation ${v.ok ? 'OK' : 'BROKEN'})`);
+  const withHash = doc.packages.filter(p => Array.isArray(p.checksums) && p.checksums.length > 0).length;
+  if (withHash < doc.packages.length) {
+    log('INFO', `component hashes: ${withHash}/${doc.packages.length} (missing: no real lockfile integrity data for the rest — never fabricated)`);
+  }
   if (!v.ok) {
     for (const p of v.problems.slice(0, 5)) log('FAIL', p);
     process.exit(1);

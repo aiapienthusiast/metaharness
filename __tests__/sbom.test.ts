@@ -8,6 +8,7 @@ import { promisify } from 'node:util';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 // @ts-ignore — JS module
+import { createHash } from 'node:crypto';
 import { validateSpdx, buildSbomFromRepo } from '../scripts/sbom.mjs';
 
 const execFile = promisify(execFileCb);
@@ -151,5 +152,52 @@ describe('SBOM builder against the live repo', () => {
     const keys = doc.packages.map((p: any) => `${p.name}@${p.versionInfo}`);
     const dupes = keys.filter((k: string, i: number) => keys.indexOf(k) !== i);
     expect(dupes, `duplicate name@version found: ${dupes.slice(0, 3).join(', ')}`).toEqual([]);
+  });
+
+  // 2026-07-29 CISA/NSA/FBI "Minimum Elements for a SBOM" adds Component
+  // Hash to the baseline field set. Before this patch, every npm package's
+  // `checksums[0].checksumValue` was a SHA1 hash of the `integrity` STRING
+  // itself (or of a `name@version` placeholder when integrity was absent)
+  // — syntactically valid SPDX shape, but not derivable from, or
+  // verifiable against, the real package content at all.
+  it('npm package checksums are real digests of integrity data, never a hash-of-the-SRI-string fabrication', async () => {
+    const lock = JSON.parse(await (await import('node:fs/promises')).readFile(join(ROOT, 'package-lock.json'), 'utf-8'));
+    const found = Object.entries<any>(lock.packages).find(
+      ([p, pkg]: [string, any]) => p && pkg.version && typeof pkg.integrity === 'string' && !pkg.dev,
+    );
+    expect(found, 'no package-lock.json entry with an integrity field found — fixture assumption broken').toBeDefined();
+    const [lockPath, lockPkg] = found!;
+    const name = lockPkg.name ?? lockPath.split('node_modules/').pop();
+
+    const doc = await buildSbomFromRepo();
+    const match = doc.packages.find((p: any) => p.name === name && p.versionInfo === lockPkg.version);
+    expect(match, `${name}@${lockPkg.version} not found in generated SBOM`).toBeDefined();
+    expect(Array.isArray(match!.checksums) && match!.checksums.length > 0, 'expected a checksums entry').toBe(true);
+
+    // Independently re-derive the expected digest straight from the SRI
+    // integrity string (base64 payload -> hex), bypassing sbom.mjs
+    // entirely, and require an exact match — this is the real assertion a
+    // fabricated hash-of-the-SRI-string (or hash-of-a-placeholder) cannot
+    // pass, unlike a shape-only check.
+    const sriMatch = /^(sha512|sha384|sha256|sha1)-([A-Za-z0-9+/]+=*)/.exec(lockPkg.integrity.trim());
+    expect(sriMatch, `unexpected integrity format: ${lockPkg.integrity}`).toBeTruthy();
+    const expectedHex = Buffer.from(sriMatch![2], 'base64').toString('hex');
+    expect(match!.checksums[0].checksumValue).toBe(expectedHex);
+    expect(match!.checksums[0].algorithm).toBe(sriMatch![1].toUpperCase());
+
+    // And explicitly rule out the exact fabrication this candidate replaces:
+    // SHA1 of the integrity string itself is a completely different value.
+    const fabricated = createHash('sha1').update(lockPkg.integrity).digest('hex');
+    expect(match!.checksums[0].checksumValue).not.toBe(fabricated);
+  });
+
+  it('cargo packages carry no fabricated checksum (none claimed today — honest omission)', async () => {
+    const doc = await buildSbomFromRepo();
+    const cargoPkgs = doc.packages.filter((p: any) =>
+      p.externalRefs?.[0]?.referenceLocator?.startsWith('pkg:cargo/'),
+    );
+    for (const p of cargoPkgs) {
+      expect(p.checksums).toBeUndefined();
+    }
   });
 });
