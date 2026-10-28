@@ -7,3 +7,5 @@
 - Correct repository provenance to `ruvnet/metaharness`.
 
 Verify a built tarball with `node scripts/kernel-consumer-smoke.mjs`: ordinary npm install, clean npm ci, and actual kernel loading. After publication, repeat with `--registry` to fetch the exact version from npm. Existing 0.1.3 manifests cannot be rewritten.
+
+Existing projects locked to 0.1.3 should run `npm install @metaharness/kernel@^0.1.4` after publication to refresh their lockfile before `npm ci`.

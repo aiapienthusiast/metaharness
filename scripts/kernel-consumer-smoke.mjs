@@ -27,7 +27,9 @@ const installed = join(consumer,'node_modules/@metaharness/kernel');
 const manifest = JSON.parse(readFileSync(join(installed,'package.json'),'utf8'));
 assert.equal(manifest.version,sourceManifest.version);
 const result = JSON.parse(run(process.execPath,['--input-type=module','-e',
-  `const {loadKernel}=await import(${JSON.stringify(pathToFileURL(join(installed,'dist/index.js')).href)});const k=await loadKernel();console.log(JSON.stringify({backend:k.backend,version:k.version()}));`],consumer));
+  `const {loadKernel}=await import(${JSON.stringify(pathToFileURL(join(installed,'dist/index.js')).href)});const k=await loadKernel();console.log(JSON.stringify({backend:k.backend,version:k.version(),info:k.kernelInfo()}));`],consumer));
 assert(['native','wasm','js'].includes(result.backend));
-assert.equal(result.version,sourceManifest.version);
-console.log(JSON.stringify({status:'PASS',source:registry?'registry':'tarball',package:`${manifest.name}@${manifest.version}`,npm:npmVersion,backend:result.backend,consumer,...(!registry?{tarball:installSpec}:{})}));
+// Rust/WASM use their Cargo version, independently of the npm wrapper version.
+assert.match(result.version,/^\d+\.\d+\.\d+/);
+assert.equal(result.info.version,result.version);
+console.log(JSON.stringify({status:'PASS',source:registry?'registry':'tarball',package:`${manifest.name}@${manifest.version}`,npm:npmVersion,backend:result.backend,runtimeVersion:result.version,consumer,...(!registry?{tarball:installSpec}:{})}));
